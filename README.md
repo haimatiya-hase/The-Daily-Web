@@ -13,7 +13,7 @@ HTML5, CSS ו-Vanilla JavaScript.
 ## דרישות מקומיות
 
 - Node.js 20 ומעלה
-- MongoDB מקומי או MongoDB Atlas
+- MongoDB מקומי מומלץ בשלב הפיתוח; MongoDB Atlas אפשרי אם המרצה מאשר שימוש בו
 - Git וחשבון GitHub אישי לכל חברי הקבוצה
 
 ## התקנה והרצה
@@ -26,7 +26,8 @@ npm run dev
 
 המערכת תהיה זמינה בכתובת `http://localhost:3000`.
 
-אם MongoDB אינו זמין, השרת עדיין יעלה במצב תשתית-ממשק, ומסלול
+לפי מסמך הדרישות, MongoDB ו-Mongoose הם חובה. אם MongoDB אינו זמין, השרת
+עדיין יעלה במצב תשתית-ממשק, ומסלול
 `/api/health` יציין שהחיבור למסד הנתונים אינו מוגדר. לצורך הפיצ'רים עצמם
 יש להגדיר `MONGODB_URI` בקובץ `.env`.
 
@@ -75,6 +76,14 @@ docs/                    # חלוקת עבודה, branching ומעקב דריש�
 6. כל חברי הקבוצה צריכים להכיר את כלל הקוד, לא רק את האזור שבנו.
 
 פירוט נוסף נמצא ב-`docs/branching-strategy.md` וב-`docs/team-division.md`.
+
+מסמך הדרישות המקורי נמצא ב-[`docs/project-requirements.pdf`](docs/project-requirements.pdf).
+
+## Code explanation rule
+
+All code comments use simple English. Each function and non-obvious logical
+operation will have a short explanation close to the code. We avoid comments
+that only repeat obvious syntax, so the code stays readable during the defense.
 
 ## בדיקת health
 
