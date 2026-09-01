@@ -40,3 +40,11 @@ test("session token is read from the authentication cookie", () => {
   // Confirm that requests without cookies remain unauthenticated guests.
   assert.equal(readSessionToken({ headers: {} }), null);
 });
+
+// Verify that malformed cookie encoding is treated as an unauthenticated request.
+test("malformed session cookies do not crash cookie parsing", () => {
+  // Send an invalid percent escape through the session cookie header.
+  const req = { headers: { cookie: "daily_web_session=%not-a-valid-escape" } };
+  // Confirm that the malformed value is ignored safely.
+  assert.equal(readSessionToken(req), null);
+});

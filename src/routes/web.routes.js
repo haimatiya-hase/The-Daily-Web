@@ -10,15 +10,20 @@ const { requireRole } = require("../middleware/auth.middleware");
 // Keep browser page routes in one router.
 const router = express.Router();
 
+// Render the public home page shell.
 router.get("/", homeController.showHome);
+// Render one public article page by its URL identifier.
 router.get("/articles/:articleId", articleController.showArticle);
+// Show the login form to visitors without a valid session.
 router.get("/login", authController.showLogin);
 // Receive credentials submitted by the login form.
 router.post("/login", authController.login);
 // End only the session represented by the current browser cookie.
 router.post("/logout", authController.logout);
+// Protect the reporter dashboard with the server-side role guard.
 router.get("/reporter", requireRole("reporter"), reporterController.showReporterDashboard);
 router.get("/reporter/articles/:articleId", requireRole("reporter"), reporterController.showReporterArticle); // Show one owned article in the reporter editor.
+// Protect the editor dashboard with the server-side role guard.
 router.get("/editor", requireRole("editor"), editorController.showEditorDashboard);
 
 module.exports = router;

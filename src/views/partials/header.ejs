@@ -1,13 +1,17 @@
-    <header class="site-header">
-      <div class="container header-inner">
-        <a class="brand" href="/" aria-label="The Daily Web - עמוד הבית">
-          <span class="brand-mark">DW</span>
+    <header class="site-header"> <%# Start the shared site header. %>
+      <div class="container header-inner"> <%# Keep branding, status, and navigation aligned. %>
+        <a class="brand" href="/" aria-label="The Daily Web - עמוד הבית"> <%# Link the logo to the public home page. %>
+          <span class="brand-mark"><span>DW</span></span>
           <span>
             <strong>The Daily Web</strong>
             <small>חדשות. הקשר. השפעה.</small>
           </span>
         </a>
-        <nav class="main-nav" aria-label="ניווט ראשי">
+        <div class="header-signal" aria-label="מצב המערכת"> <%# Show a visual system-status indicator. %>
+          <span class="signal-dot"></span>
+          <span>NEWSROOM ONLINE</span>
+        </div>
+        <nav class="main-nav" aria-label="ניווט ראשי"> <%# Provide the main keyboard-accessible navigation. %>
           <a class="<%= activePage === 'home' ? 'active' : '' %>" href="/">עמוד הבית</a>
           <%# Show account actions only when the session middleware loaded a user. %>
           <% if (currentUser) { %>

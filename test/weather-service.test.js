@@ -58,18 +58,18 @@ test("weather cache refreshes after the configured window", async () => {
   assert.equal(recorder.getCalls(), 2);
 });
 
-// Verify that a temporary service failure can use the last successful result.
-test("weather service falls back to the last successful result", async () => {
+// Verify that an expired result is never shown after the freshness limit.
+test("weather service rejects an expired fallback after a service failure", async () => {
   // Start this test without cache data left by another test.
   resetWeatherCache();
   // Create a successful response used to populate fallback data.
   const recorder = createFetchRecorder({ current: { temperature_2m: 26 } });
   // Store one successful result in the service cache.
-  const first = await getWeather({ serviceUrl: "https://example.com/weather", fetchImpl: recorder.fetchImpl, now: 1000, cacheTtlMs: 10 });
+  await getWeather({ serviceUrl: "https://example.com/weather", fetchImpl: recorder.fetchImpl, now: 1000, cacheTtlMs: 10 });
   // Create a replacement fetch function that simulates a network failure.
   const failingFetch = async () => { throw new Error("Network unavailable"); };
   // Request weather after expiry while the external service is unavailable.
-  const fallback = await getWeather({ serviceUrl: "https://example.com/weather", fetchImpl: failingFetch, now: 2000, cacheTtlMs: 10 });
-  // Confirm that the last successful data is returned as a safe fallback.
-  assert.deepEqual(fallback, first);
+  const expiredRequest = getWeather({ serviceUrl: "https://example.com/weather", fetchImpl: failingFetch, now: 2000, cacheTtlMs: 10 });
+  // Confirm that the service does not display data older than the allowed window.
+  await assert.rejects(expiredRequest, /Network unavailable/);
 });

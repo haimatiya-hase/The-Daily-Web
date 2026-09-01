@@ -1,12 +1,12 @@
-<%- include("../partials/head", { pageTitle }) %>
-<%- include("../partials/header", { activePage: "" }) %>
+<%- include("../partials/head", { pageTitle }) %> <%# Start the shared error page document. %>
+<%- include("../partials/header", { activePage: "" }) %> <%# Keep the normal navigation available on errors. %>
 
-<main class="container page-shell narrow-shell">
-  <section class="empty-state large-empty">
-    <div class="eyebrow">ERROR <%= statusCode %></div>
-    <h1><%= message %></h1>
-    <a class="button button-primary" href="/">חזרה לעמוד הבית</a>
+<main class="container page-shell narrow-shell"> <%# Keep error content centered and easy to scan. %>
+  <section class="empty-state large-empty"> <%# Present the safe error returned by middleware. %>
+    <div class="eyebrow">ERROR <%= statusCode %></div> <%# Show the HTTP status code. %>
+    <h1><%= message %></h1> <%# Show the escaped user-facing error message. %>
+    <a class="button button-primary" href="/">חזרה לעמוד הבית</a> <%# Return the visitor to a working page. %>
   </section>
 </main>
 
-<%- include("../partials/footer") %>
+<%- include("../partials/footer") %> <%# Close the shared HTML document. %>

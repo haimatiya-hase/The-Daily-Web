@@ -16,8 +16,10 @@ const statuses = ["draft", "pending_review", "published", "changes_requested"];
 
 // Create a user only once and update its demo password when needed.
 async function getOrCreateUser(username, displayName, role) {
+  // Hash the shared demo password before it reaches the user collection.
   const passwordHash = await hashPassword(config.seedPassword);
 
+  // Update an existing demo user or insert it when it is missing.
   return User.findOneAndUpdate(
     { username },
     { username, displayName, role, passwordHash },
@@ -27,8 +29,10 @@ async function getOrCreateUser(username, displayName, role) {
 
 // Build one article version with clear content for the demo screen.
 function buildSnapshot(index, category, versionNumber, publishedAt = null, approvedBy = null) {
+  // Make later versions visibly different during a classroom demo.
   const updateText = versionNumber > 1 ? " - updated version" : "";
 
+  // Return one valid article version that fits the Mongoose schema.
   return {
     versionNumber,
     title: `Demo article ${index}${updateText}: A sample news story`,
@@ -45,9 +49,11 @@ function buildSnapshot(index, category, versionNumber, publishedAt = null, appro
 
 // Create or update exactly 500 records owned by this seed script.
 async function upsertDemoArticles(reporters, editor) {
+  // Collect bulk operations so 500 demo articles use one database write.
   const operations = [];
 
   for (let offset = 0; offset < DEMO_ARTICLE_COUNT; offset += 1) {
+    // Build predictable status, category, and owner values for each record.
     const index = offset + 1;
     const status = statuses[offset % statuses.length];
     const category = categories[offset % categories.length];
@@ -64,6 +70,7 @@ async function upsertDemoArticles(reporters, editor) {
       ? buildSnapshot(index, category, versionNumber, publishedAt, editor._id)
       : null;
 
+    // Add an upsert so rerunning the seed updates only its own demo records.
     operations.push({
       updateOne: {
         filter: { demoKey: `${DEMO_KEY_PREFIX}${index}` },
@@ -86,6 +93,7 @@ async function upsertDemoArticles(reporters, editor) {
     });
   }
 
+  // Execute the prepared article updates in their original order.
   await Article.bulkWrite(operations, { ordered: true });
 
   // Select the records by their private seed key for related demo data.
@@ -97,6 +105,7 @@ async function upsertDemoArticles(reporters, editor) {
 
 // Rebuild only comments and views that belong to the demo articles.
 async function refreshDemoRelatedData(articles) {
+  // Keep related demo documents limited to the articles selected by this run.
   const articleIds = articles.map((article) => article._id);
 
   // Delete only records connected to the 500 marked demo articles.
@@ -119,13 +128,16 @@ async function refreshDemoRelatedData(articles) {
   const viewEvents = [];
 
   for (const article of publishedArticles) {
+    // Use the approved version when attaching views to each demo article.
     const finalVersion = Number(article.publishedVersion.versionNumber) || 1;
 
     for (let day = 0; day < 14; day += 1) {
+      // Create one event day at a time for the analytics timeline.
       const viewedAt = new Date(Date.now() - day * 24 * 60 * 60 * 1000);
       const publicationVersion = finalVersion > 1 && day >= 7 ? 1 : finalVersion;
 
       for (let count = 0; count < 3; count += 1) {
+        // Add three anonymous sample views for this article and day.
         // Use a stable hash so the seeded client identifier is not stored openly.
         const clientKey = `demo-view-${article._id}-${day}-${count}`;
         viewEvents.push({
@@ -144,6 +156,7 @@ async function refreshDemoRelatedData(articles) {
 
 // Seed users, articles, comments, and views for the whole team.
 async function seed() {
+  // Stop early when the required local database settings are missing.
   if (!config.mongoUri) {
     throw new Error("MONGODB_URI is required to seed demo data.");
   }
@@ -152,19 +165,24 @@ async function seed() {
     throw new Error("SEED_PASSWORD is required to seed demo users.");
   }
 
+  // Open MongoDB before creating users and content.
   const connected = await connectDatabase();
   if (!connected) {
     throw new Error("MongoDB connection failed. Check MONGODB_URI and try again.");
   }
 
+  // Create the three reporter accounts in parallel.
   const reporters = await Promise.all([
     getOrCreateUser("reporter.one", "Demo reporter 1", "reporter"),
     getOrCreateUser("reporter.two", "Demo reporter 2", "reporter"),
     getOrCreateUser("reporter.three", "Demo reporter 3", "reporter")
   ]);
+  // Create the single editor account used by the review dashboard.
   const editor = await getOrCreateUser("editor.one", "Demo editor", "editor");
+  // Seed articles first so comments and views have valid article references.
   const articles = await upsertDemoArticles(reporters, editor);
 
+  // Rebuild the related comments and analytics timeline.
   await refreshDemoRelatedData(articles);
 
   console.log(`Seed complete. Users: 4, articles: ${articles.length}, comments: 20, view timeline: ready.`);
@@ -172,9 +190,11 @@ async function seed() {
 
 seed()
   .catch((error) => {
+    // Print only the error message and return a failed process status.
     console.error(error.message);
     process.exitCode = 1;
   })
   .finally(async () => {
+    // Close MongoDB whether seeding succeeded or failed.
     await disconnectDatabase();
   });

@@ -6,6 +6,7 @@ const USER_ROLES = Object.freeze(["reporter", "editor"]);
 
 // Store only reporters and editors. Guests are not database users.
 const userSchema = new mongoose.Schema({
+  // Store the normalized login name used by the login query.
   username: {
     type: String,
     required: true,
@@ -17,6 +18,7 @@ const userSchema = new mongoose.Schema({
     // Accept only predictable characters that are safe to type and search.
     match: /^[a-z0-9._-]+$/
   },
+  // Store the name shown in the navigation and dashboards.
   displayName: {
     type: String,
     required: true,
@@ -25,11 +27,13 @@ const userSchema = new mongoose.Schema({
     minlength: 2,
     maxlength: 80
   },
+  // Store only the salted password result, not the original password.
   passwordHash: {
     type: String,
     required: true,
     select: false
   },
+  // Store whether this account is a reporter or an editor.
   role: {
     type: String,
     // Reject every stored role except the two authenticated team roles.

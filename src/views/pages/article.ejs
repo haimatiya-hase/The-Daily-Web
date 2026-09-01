@@ -1,30 +1,30 @@
-<%- include("../partials/head", { pageTitle }) %>
-<%- include("../partials/header", { activePage }) %>
+<%- include("../partials/head", { pageTitle }) %> <%# Start the shared HTML document and page metadata. %>
+<%- include("../partials/header", { activePage }) %> <%# Show the shared navigation and session actions. %>
 
-<main class="container page-shell">
-  <% if (article) { %>
-    <article class="article-page">
-      <div class="eyebrow"><%= article.category %></div>
-      <h1><%= article.title %></h1>
-      <p class="article-meta">מאת <%= article.author.displayName %> · <%= article.publishedAt %></p>
-      <img class="article-image" src="<%= article.imageUrl %>" alt="">
-      <div class="article-content"><%- article.content %></div>
-      <section class="comments-section" aria-labelledby="comments-title">
-        <h2 id="comments-title">תגובות</h2>
-        <div id="comments-list"></div>
-        <form id="comment-form"></form>
+<main class="container page-shell"> <%# Hold either the article content or the route placeholder. %>
+  <% if (article) { %> <%# Render the full article when a controller supplies public data. %>
+    <article class="article-page"> <%# Keep the article fields inside one semantic HTML element. %>
+      <div class="eyebrow"><%= article.category %></div> <%# Show the article category above the title. %>
+      <h1><%= article.title %></h1> <%# Show the escaped public headline. %>
+      <p class="article-meta">מאת <%= article.author.displayName %> · <%= article.publishedAt %></p> <%# Show the public author and publication date. %>
+      <img class="article-image" src="<%= article.imageUrl %>" alt=""> <%# Load the approved article image. %>
+      <div class="article-content"><%- article.content %></div> <%# Insert trusted article content for the finished article page. %>
+      <section class="comments-section" aria-labelledby="comments-title"> <%# Reserve an accessible area for reader comments. %>
+        <h2 id="comments-title">תגובות</h2> <%# Label the comments area. %>
+        <div id="comments-list"></div> <%# Give JavaScript a place to render comments later. %>
+        <form id="comment-form"></form> <%# Keep the comment form hook ready for the next feature. %>
       </section>
     </article>
   <% } else { %>
-    <section class="empty-state large-empty">
-      <div class="eyebrow">ARTICLE ROUTE READY</div>
-      <h1>עמוד הכתבה הוכן לחיבור לנתונים</h1>
-      <p>מזהה הכתבה: <code><%= articleId %></code></p>
-      <p>התוכן המלא יוחזר בהמשך כבר ב-HTML הראשוני לצורך נגישות ו-SEO.</p>
-      <a class="button button-primary" href="/">חזרה לעמוד הבית</a>
+    <section class="empty-state large-empty"> <%# Explain the current scaffold when article data is not connected yet. %>
+      <div class="eyebrow">ARTICLE ROUTE READY</div> <%# Mark the route as available for the next integration. %>
+      <h1>עמוד הכתבה הוכן לחיבור לנתונים</h1> <%# Tell the user why the full article is not shown yet. %>
+      <p>מזהה הכתבה: <code><%= articleId %></code></p> <%# Show the requested article identifier safely. %>
+      <p>התוכן המלא יוחזר בהמשך כבר ב-HTML הראשוני לצורך נגישות ו-SEO.</p> <%# Explain the planned server-rendered article behavior. %>
+      <a class="button button-primary" href="/">חזרה לעמוד הבית</a> <%# Offer a clear way back to the public home page. %>
     </section>
   <% } %>
 </main>
 
-<script src="/js/article.js" defer></script>
-<%- include("../partials/footer") %>
+<script src="/js/article.js" defer></script> <%# Load comment-page behavior after HTML parsing. %>
+<%- include("../partials/footer") %> <%# Close the shared HTML document. %>

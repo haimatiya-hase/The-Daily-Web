@@ -79,13 +79,13 @@ async function getWeather(options = {}) {
     cachedAt = now;
     // Return the fresh weather result to the caller.
     return weather;
-  // Handle external service failures without hiding them when no fallback exists.
+  // Handle external service failures without showing data outside the allowed freshness window.
   } catch (error) {
-    // Return the last successful result when the service is temporarily unavailable.
-    if (cachedWeather !== null) {
+    // Keep the last result only while it is still inside the fifteen-minute limit.
+    if (cachedWeather !== null && now - cachedAt < cacheTtlMs) {
       return cachedWeather;
     }
-    // Re-throw the failure when the server has no safe fallback data.
+    // Re-throw the failure when no fresh result is available.
     throw error;
   } finally {
     // Prevent the timeout from remaining active after the request completes.

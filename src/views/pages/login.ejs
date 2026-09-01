@@ -1,11 +1,23 @@
 <%- include("../partials/head", { pageTitle }) %>
 <%- include("../partials/header", { activePage }) %>
 
-<main class="container page-shell narrow-shell">
-  <section class="form-card">
-    <div class="eyebrow">TEAM ACCESS</div>
-    <h1>כניסת צוות</h1>
-    <p>כתבים ועורכים יתחברו כאן לפי התפקיד שלהם במערכת.</p>
+<main class="container page-shell auth-shell">
+  <section class="auth-intro">
+    <div class="eyebrow"><span class="eyebrow-line"></span>SECURE TEAM ACCESS</div>
+    <h1>נכנסים<br><span>לחדר החדשות.</span></h1>
+    <p>סביבת עבודה אחת לכתבים ולעורכים — עם הרשאות ברורות, שמירת עבודה וגישה מהירה לתוכן.</p>
+    <div class="auth-feature-list">
+      <div><span class="feature-number">01</span><div><strong>ROLE BASED</strong><small>כל משתמש מגיע לאזור העבודה שלו.</small></div></div>
+      <div><span class="feature-number">02</span><div><strong>PERSISTENT SESSION</strong><small>העבודה נשמרת גם לאחר הפעלה מחדש.</small></div></div>
+      <div><span class="feature-number">03</span><div><strong>EDITORIAL CONTROL</strong><small>תוכן עובר תהליך אישור מסודר.</small></div></div>
+    </div>
+  </section>
+
+  <section class="form-card auth-card">
+    <div class="auth-card-glow" aria-hidden="true"></div>
+    <div class="card-topline"><div class="eyebrow">TEAM ACCESS</div><span class="secure-chip">ENCRYPTED</span></div>
+    <h2>כניסת צוות</h2>
+    <p>התחברו עם פרטי המשתמש שקיבלתם לצורך ההדגמה.</p>
     <%# Show one generic message without revealing which credential failed. %>
     <% if (errorMessage) { %>
       <%# Announce authentication feedback immediately to screen readers. %>
@@ -21,10 +33,11 @@
         סיסמה
         <input type="password" name="password" required autocomplete="current-password">
       </label>
-      <button class="button button-primary" type="submit">התחברות</button>
+      <button class="button button-primary" type="submit">התחברות <span aria-hidden="true">↗</span></button>
     </form>
     <%# Explain which database users are allowed to use this protected form. %>
     <p class="form-note">ההתחברות מיועדת לחברי צוות בעלי תפקיד Reporter או Editor.</p>
+    <div class="auth-card-footer"><span class="signal-dot"></span><span>SESSION READY</span><span class="auth-footer-line"></span></div>
   </section>
 </main>
 

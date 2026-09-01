@@ -3,18 +3,21 @@ const mongoose = require("mongoose");
 
 // Store guest comments and a hashed client key for rate limiting.
 const commentSchema = new mongoose.Schema({
+  // Link the comment to the article that receives it.
   article: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Article",
     required: true,
     index: true
   },
+  // Store the public name selected by the guest reader.
   guestName: {
     type: String,
     required: true,
     trim: true,
     maxlength: 80
   },
+  // Store the text of the guest comment.
   body: {
     type: String,
     required: true,
@@ -22,11 +25,13 @@ const commentSchema = new mongoose.Schema({
     minlength: 1,
     maxlength: 2000
   },
+  // Store only a hash for rate-limit checks by anonymous clients.
   clientKeyHash: {
     type: String,
     required: true,
     index: true
   },
+  // Use soft deletion so moderation does not remove history from the database.
   deletedAt: {
     type: Date,
     default: null
