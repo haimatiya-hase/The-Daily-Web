@@ -2,15 +2,51 @@
 <%- include("../partials/header", { activePage }) %>
 
 <main class="container page-shell">
-  <section class="dashboard-header">
-    <div class="eyebrow">REPORTER WORKSPACE</div>
-    <h1>אזור כתב</h1>
-    <p>שלום <%= user.displayName %>. כאן ינוהלו הטיוטות, ההגשות וההערות מהעורך.</p>
+  <section class="dashboard-header reporter-header"> <%# Introduce the reporter workspace and its main action. %>
+    <div> <%# Keep the heading text together. %>
+      <div class="eyebrow">REPORTER WORKSPACE</div> <%# Show the English workspace label. %>
+      <h1>אזור כתב</h1> <%# Show the main page heading. %>
+      <p>שלום <%= user.displayName %>. כאן אפשר ליצור כתבות, לשמור טיוטות ולשלוח אותן לעורך.</p> <%# Explain the reporter workflow. %>
+    </div>
+    <button class="button button-primary" id="new-article-button" type="button">כתבה חדשה</button> <%# Create a new draft through the REST API. %>
   </section>
-  <section class="empty-state">
-    <h2>לוח הכתבות יתחבר כאן</h2>
-    <p>השלב הבא יוסיף את מצבי הכתבה ואת שמירת העבודה האוטומטית.</p>
-  </section>
+
+  <p class="form-message" id="reporter-message" role="status" aria-live="polite"></p> <%# Announce create errors without reloading the page. %>
+
+  <% if (articles.length > 0) { %> <%# Show the personal article list when the reporter has articles. %>
+    <section class="reporter-grid" aria-label="הכתבות שלי"> <%# Group all article cards in a responsive grid. %>
+      <% articles.forEach((article) => { %> <%# Render one card for every owned article. %>
+        <article class="reporter-card"> <%# Display one reporter article and its workflow state. %>
+          <div class="reporter-card-top"> <%# Keep the status and version number on one line. %>
+            <span class="status-pill status-<%= article.status %>"><%= article.statusLabel %></span> <%# Show the current workflow status. %>
+            <span class="version-label">גרסה <%= article.workingVersion.versionNumber %></span> <%# Show the current working version number. %>
+          </div>
+          <h2><%= article.workingVersion.title || "כתבה ללא כותרת" %></h2> <%# Show the title or a clear draft fallback. %>
+          <p class="reporter-summary"><%= article.workingVersion.summary || "עדיין לא הוזן תקציר לכתבה." %></p> <%# Show the summary or a clear fallback. %>
+          <% if (article.editorNote) { %> <%# Show the editor note only after corrections were requested. %>
+            <div class="editor-note"> <%# Highlight the correction request for the reporter. %>
+              <strong>הערת העורך</strong> <%# Label the note source. %>
+              <p><%= article.editorNote %></p> <%# Escape and display the editor's note. %>
+            </div>
+          <% } %>
+          <% if (article.hasPublishedVersion && article.status !== "published") { %> <%# Explain that readers still see the approved version during review. %>
+            <p class="public-version-note">הגרסה המאושרת הקודמת עדיין מוצגת לציבור.</p> <%# Protect the public article while a new revision waits. %>
+          <% } %>
+          <div class="reporter-card-footer"> <%# Keep the save time and action together. %>
+            <span>נשמר לאחרונה: <%= article.updatedAtLabel %></span> <%# Show when MongoDB last saved the article. %>
+            <a class="button button-secondary" href="/reporter/articles/<%= article.id %>"><%= article.canEdit ? "עריכה" : "צפייה" %></a> <%# Open the owned article in edit or read-only mode. %>
+          </div>
+        </article>
+      <% }); %>
+    </section>
+  <% } else { %> <%# Show guidance when the reporter has no articles yet. %>
+    <section class="empty-state"> <%# Present a friendly first-use state. %>
+      <div class="empty-icon">+</div> <%# Add a simple visual marker. %>
+      <h2>עדיין אין לך כתבות</h2> <%# Explain why the list is empty. %>
+      <p>לחץ על "כתבה חדשה" כדי לפתוח טיוטה ראשונה. הטיוטה תישמר אוטומטית בזמן הכתיבה.</p> <%# Explain the next action and autosave behavior. %>
+    </section>
+  <% } %>
 </main>
 
+<script src="/js/reporter.js" defer></script> <%# Load the create and autosave browser behavior. %>
 <%- include("../partials/footer") %>

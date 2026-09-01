@@ -30,13 +30,14 @@ function errorHandler(error, req, res, next) {
   }
 
   // Do not expose internal details for unexpected server errors.
-  const statusCode = Number(error.statusCode) || 500;
+  const statusCode = Number(error.statusCode) || (error.name === "ValidationError" ? 400 : 500); // Treat invalid Mongoose input as a normal client error.
+  const safeMessage = error.name === "ValidationError" ? "הנתונים שנשלחו אינם תקינים." : statusCode === 500 ? "An unexpected server error occurred." : error.message; // Hide internal details while keeping expected messages useful.
 
   if (isApiRequest(req)) {
     res.status(statusCode).json({
       error: {
         statusCode,
-        message: statusCode === 500 ? "An unexpected server error occurred." : error.message
+        message: safeMessage
       }
     });
     return;
@@ -45,7 +46,7 @@ function errorHandler(error, req, res, next) {
   res.status(statusCode).render("pages/error", {
     pageTitle: "שגיאה",
     statusCode,
-    message: statusCode === 500 ? "אירעה שגיאה בלתי צפויה. נסו שוב מאוחר יותר." : error.message
+    message: safeMessage
   });
 }
 
