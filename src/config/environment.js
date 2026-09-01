@@ -51,6 +51,8 @@ const config = Object.freeze({
   weatherLatitude: Number(process.env.WEATHER_LATITUDE || 31.7683),
   weatherLongitude: Number(process.env.WEATHER_LONGITUDE || 35.2137),
   weatherTimezone: process.env.WEATHER_TIMEZONE || "Asia/Jerusalem",
+  // Reuse weather results for fifteen minutes unless the environment overrides it.
+  weatherCacheMinutes: Number(process.env.WEATHER_CACHE_MINUTES || 15),
   seedPassword: process.env.SEED_PASSWORD || ""
 });
 
