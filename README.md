@@ -76,6 +76,7 @@ docs/                    # חלוקת עבודה, branching ומעקב דריש�
 6. כל חברי הקבוצה צריכים להכיר את כלל הקוד, לא רק את האזור שבנו.
 
 פירוט נוסף נמצא ב-`docs/branching-strategy.md` וב-`docs/team-division.md`.
+הגרסה המלאה של החלוקה נמצאת גם ב-[`docs/project-division-updated.docx`](docs/project-division-updated.docx).
 
 מסמך הדרישות המקורי נמצא ב-[`docs/project-requirements.pdf`](docs/project-requirements.pdf).
 
