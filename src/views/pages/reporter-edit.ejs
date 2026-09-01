@@ -54,7 +54,7 @@
 
       <label> <%# Label the full article body. %>
         תוכן הכתבה
-        <textarea name="content" rows="18" maxlength="30000" required><%= article.workingVersion.content %></textarea> <%# Edit the full plain-text article body. %>
+        <textarea name="content" rows="18" maxlength="20000" required><%= article.workingVersion.content %></textarea> <%# Match the editor service limit while editing the full article body. %>
       </label>
     </fieldset>
 

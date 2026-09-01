@@ -20,7 +20,7 @@
     try { // Handle network failures without breaking the dashboard.
       const response = await fetch("/api/reporter/articles", { method: "POST", headers: { Accept: "application/json" } }); // Ask the REST API to create the draft.
       const result = await readResponse(response); // Read the new article URL or error message.
-      if (!response.ok) throw new Error(result.message); // Turn an API problem into the normal error flow.
+      if (!response.ok) throw new Error(result.error?.message || result.message || "לא ניתן ליצור כתבה כרגע."); // Read the shared API error format and keep a safe fallback.
       window.location.assign(result.editUrl); // Open the new article in the reporter editor.
     } catch (error) { // Show create failures on the current page.
       if (dashboardMessage) dashboardMessage.textContent = error.message || "לא ניתן ליצור כתבה כרגע."; // Display a useful retry message.
@@ -60,7 +60,7 @@
     try { // Keep a network problem from interrupting typing.
       const response = await fetch(`/api/reporter/articles/${articleId}`, { method: "PUT", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: payload }); // Send the private working version to MongoDB.
       const result = await readResponse(response); // Read the save confirmation or validation problem.
-      if (!response.ok) throw new Error(result.message); // Move an API problem into the normal error flow.
+      if (!response.ok) throw new Error(result.error?.message || result.message || "השמירה נכשלה."); // Read the shared API error format and keep a safe fallback.
       lastSavedPayload = payload; // Remember exactly which version reached the server.
       const savedTime = new Intl.DateTimeFormat("he-IL", { hour: "2-digit", minute: "2-digit", second: "2-digit" }).format(new Date()); // Format the current save time.
       showAutosaveMessage(`נשמר אוטומטית בשעה ${savedTime}`); // Confirm that the draft is stored.
@@ -106,7 +106,7 @@
     try { // Handle workflow and network failures on the same page.
       const response = await fetch(`/api/reporter/articles/${articleId}/submit`, { method: "POST", headers: { Accept: "application/json" } }); // Ask the server to validate and submit the article.
       const result = await readResponse(response); // Read the confirmation or validation message.
-      if (!response.ok) throw new Error(result.message); // Move an API problem into the normal error flow.
+      if (!response.ok) throw new Error(result.error?.message || result.message || "לא ניתן לשלוח את הכתבה כרגע."); // Read the shared API error format and keep a safe fallback.
       window.location.assign("/reporter"); // Return to the dashboard after successful submission.
     } catch (error) { // Keep the article editable after a failed submission.
       showAutosaveMessage(error.message || "לא ניתן לשלוח את הכתבה כרגע.", true); // Display the exact validation or network problem.
