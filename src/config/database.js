@@ -1,9 +1,12 @@
+// Load Mongoose and application settings.
 const mongoose = require("mongoose");
 const config = require("./environment");
 const logger = require("../utils/logger");
 
+// Store a small public status for the health endpoint.
 let databaseState = "not-configured";
 
+// Open the MongoDB connection when a URI exists.
 async function connectDatabase() {
   if (!config.mongoUri) {
     databaseState = "not-configured";
@@ -12,6 +15,7 @@ async function connectDatabase() {
   }
 
   try {
+    // Use a short timeout so the server does not hang during local setup.
     await mongoose.connect(config.mongoUri, {
       serverSelectionTimeoutMS: 5000
     });
@@ -25,6 +29,7 @@ async function connectDatabase() {
   }
 }
 
+// Close the connection during a clean server shutdown.
 async function disconnectDatabase() {
   if (mongoose.connection.readyState !== 0) {
     await mongoose.disconnect();
@@ -32,6 +37,7 @@ async function disconnectDatabase() {
   databaseState = "disconnected";
 }
 
+// Return only the status, never connection credentials.
 function getDatabaseStatus() {
   return databaseState;
 }

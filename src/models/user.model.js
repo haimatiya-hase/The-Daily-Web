@@ -1,5 +1,7 @@
+// Load Mongoose for the user schema.
 const mongoose = require("mongoose");
 
+// Store only reporters and editors. Guests are not database users.
 const userSchema = new mongoose.Schema({
   username: {
     type: String,
@@ -28,6 +30,7 @@ const userSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
+// Never return the password hash in a JSON response.
 userSchema.methods.toJSON = function toJSON() {
   const value = this.toObject();
   delete value.passwordHash;

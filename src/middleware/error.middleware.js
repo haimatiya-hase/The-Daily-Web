@@ -1,5 +1,6 @@
 const logger = require("../utils/logger");
 
+// Render a friendly page for unknown URLs.
 function notFoundHandler(req, res) {
   res.status(404).render("pages/error", {
     pageTitle: "העמוד לא נמצא",
@@ -8,6 +9,7 @@ function notFoundHandler(req, res) {
   });
 }
 
+// Convert unexpected errors into a safe response and a useful log.
 function errorHandler(error, req, res, next) {
   logger.error("Unhandled request error", {
     method: req.method,
@@ -21,6 +23,7 @@ function errorHandler(error, req, res, next) {
     return;
   }
 
+  // Do not expose internal details for unexpected server errors.
   const statusCode = Number(error.statusCode) || 500;
   res.status(statusCode).render("pages/error", {
     pageTitle: "שגיאה",

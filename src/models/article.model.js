@@ -1,5 +1,7 @@
+// Load Mongoose for article documents and references.
 const mongoose = require("mongoose");
 
+// Keep editable content separate from the last approved public content.
 const articleSnapshotSchema = new mongoose.Schema({
   versionNumber: { type: Number, required: true, default: 1 },
   title: { type: String, trim: true, maxlength: 180 },
@@ -13,6 +15,7 @@ const articleSnapshotSchema = new mongoose.Schema({
   approvedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" }
 }, { _id: false });
 
+// Store ownership, workflow status, versions, and counters.
 const articleSchema = new mongoose.Schema({
   author: {
     type: mongoose.Schema.Types.ObjectId,
@@ -51,6 +54,7 @@ const articleSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
+// Add indexes for public feeds and editor filters.
 articleSchema.index({ status: 1, "publishedVersion.publishedAt": -1 });
 articleSchema.index({ "publishedVersion.category": 1 });
 articleSchema.index({

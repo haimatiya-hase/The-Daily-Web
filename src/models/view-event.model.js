@@ -1,5 +1,7 @@
+// Load Mongoose for view event documents.
 const mongoose = require("mongoose");
 
+// Store one event so analytics can group views over time.
 const viewEventSchema = new mongoose.Schema({
   article: {
     type: mongoose.Schema.Types.ObjectId,
@@ -30,6 +32,7 @@ const viewEventSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
+// Index the timeline query used by Impact Analytics.
 viewEventSchema.index({ article: 1, viewedAt: 1 });
 viewEventSchema.index({ article: 1, dayKey: 1 });
 

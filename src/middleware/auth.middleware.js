@@ -1,3 +1,4 @@
+// Block users who do not have a loaded session user.
 function requireAuth(req, res, next) {
   if (!req.user) {
     res.status(401).render("pages/error", {
@@ -11,6 +12,7 @@ function requireAuth(req, res, next) {
   next();
 }
 
+// Allow only selected roles to continue to a protected route.
 function requireRole(...allowedRoles) {
   return (req, res, next) => {
     if (!req.user) {
@@ -22,6 +24,7 @@ function requireRole(...allowedRoles) {
       return;
     }
 
+    // Check the role on the server, not only in the browser.
     if (!allowedRoles.includes(req.user.role)) {
       res.status(403).render("pages/error", {
         pageTitle: "אין הרשאה",

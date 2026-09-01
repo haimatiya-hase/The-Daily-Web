@@ -1,10 +1,13 @@
+// Load filesystem and process helpers.
 const fs = require("node:fs");
 const path = require("node:path");
 const { spawnSync } = require("node:child_process");
 
+// Check only project JavaScript folders.
 const roots = ["src", "public/js", "scripts"];
 const files = [];
 
+// Collect JavaScript files recursively.
 function collect(directory) {
   for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
     const fullPath = path.join(directory, entry.name);
@@ -20,6 +23,7 @@ for (const root of roots) {
   collect(path.resolve(process.cwd(), root));
 }
 
+// Run Node's built-in syntax checker for each file.
 for (const file of files) {
   const result = spawnSync(process.execPath, ["--check", file], { stdio: "inherit" });
   if (result.status !== 0) {

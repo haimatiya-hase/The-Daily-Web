@@ -1,5 +1,7 @@
+// Load Mongoose for persistent login sessions.
 const mongoose = require("mongoose");
 
+// Store only a session token hash and its expiry date.
 const sessionSchema = new mongoose.Schema({
   tokenHash: {
     type: String,
@@ -20,6 +22,7 @@ const sessionSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
+// Let MongoDB remove expired sessions automatically.
 sessionSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 module.exports = mongoose.model("Session", sessionSchema);

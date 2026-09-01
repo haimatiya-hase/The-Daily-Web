@@ -1,3 +1,4 @@
+// Render the public news feed shell.
 function showHome(req, res) {
   res.render("pages/home", {
     pageTitle: "חדשות היום",

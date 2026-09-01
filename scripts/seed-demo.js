@@ -1,3 +1,4 @@
+// Load native helpers, configuration, models, and password hashing.
 const { randomUUID } = require("node:crypto");
 const config = require("../src/config/environment");
 const { connectDatabase, disconnectDatabase } = require("../src/config/database");
@@ -10,6 +11,7 @@ const { hashPassword } = require("../src/utils/password");
 const categories = ["חדשות", "כלכלה", "תרבות", "ספורט", "טכנולוגיה"];
 const statuses = ["draft", "pending_review", "published", "changes_requested"];
 
+// Create a user only once and update its demo password when needed.
 async function getOrCreateUser(username, displayName, role) {
   const passwordHash = await hashPassword(config.seedPassword);
   return User.findOneAndUpdate(
@@ -19,6 +21,7 @@ async function getOrCreateUser(username, displayName, role) {
   );
 }
 
+// Build one article version with predictable demo content.
 function buildSnapshot(index, category, versionNumber = 1, publishedAt = null) {
   return {
     versionNumber,
@@ -32,6 +35,7 @@ function buildSnapshot(index, category, versionNumber = 1, publishedAt = null) {
   };
 }
 
+// Create demo users, articles, comments, and view events.
 async function seed() {
   if (!config.mongoUri) {
     throw new Error("MONGODB_URI is required to seed demo data.");
@@ -48,10 +52,12 @@ async function seed() {
   ]);
   const editor = await getOrCreateUser("editor.one", "עורך דמו", "editor");
 
+  // Avoid creating more than the required 500 articles.
   const existingCount = await Article.countDocuments();
   const articlesToCreate = Math.max(0, 500 - existingCount);
   const articleIds = [];
 
+  // Spread articles across all workflow states.
   for (let index = 0; index < articlesToCreate; index += 1) {
     const status = statuses[index % statuses.length];
     const author = reporters[index % reporters.length];
@@ -70,6 +76,7 @@ async function seed() {
     articleIds.push(article._id);
   }
 
+  // Add enough related data for the defense scenarios.
   if (articleIds.length > 0) {
     await Comment.insertMany(articleIds.slice(0, 20).map((articleId, index) => ({
       article: articleId,

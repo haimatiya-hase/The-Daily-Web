@@ -1,3 +1,4 @@
+// Render the SEO-friendly article page shell.
 function showArticle(req, res) {
   res.render("pages/article", {
     pageTitle: "כתבה",
