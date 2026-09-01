@@ -1,0 +1,16 @@
+<%- include("../partials/head", { pageTitle }) %>
+<%- include("../partials/header", { activePage }) %>
+
+<main class="container page-shell">
+  <section class="dashboard-header">
+    <div class="eyebrow">REPORTER WORKSPACE</div>
+    <h1>אזור כתב</h1>
+    <p>שלום <%= user.displayName %>. כאן ינוהלו הטיוטות, ההגשות וההערות מהעורך.</p>
+  </section>
+  <section class="empty-state">
+    <h2>לוח הכתבות יתחבר כאן</h2>
+    <p>השלב הבא יוסיף את מצבי הכתבה ואת שמירת העבודה האוטומטית.</p>
+  </section>
+</main>
+
+<%- include("../partials/footer") %>

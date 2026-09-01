@@ -1,0 +1,30 @@
+<%- include("../partials/head", { pageTitle }) %>
+<%- include("../partials/header", { activePage }) %>
+
+<main class="container page-shell">
+  <% if (article) { %>
+    <article class="article-page">
+      <div class="eyebrow"><%= article.category %></div>
+      <h1><%= article.title %></h1>
+      <p class="article-meta">מאת <%= article.author.displayName %> · <%= article.publishedAt %></p>
+      <img class="article-image" src="<%= article.imageUrl %>" alt="">
+      <div class="article-content"><%- article.content %></div>
+      <section class="comments-section" aria-labelledby="comments-title">
+        <h2 id="comments-title">תגובות</h2>
+        <div id="comments-list"></div>
+        <form id="comment-form"></form>
+      </section>
+    </article>
+  <% } else { %>
+    <section class="empty-state large-empty">
+      <div class="eyebrow">ARTICLE ROUTE READY</div>
+      <h1>עמוד הכתבה הוכן לחיבור לנתונים</h1>
+      <p>מזהה הכתבה: <code><%= articleId %></code></p>
+      <p>התוכן המלא יוחזר בהמשך כבר ב-HTML הראשוני לצורך נגישות ו-SEO.</p>
+      <a class="button button-primary" href="/">חזרה לעמוד הבית</a>
+    </section>
+  <% } %>
+</main>
+
+<script src="/js/article.js" defer></script>
+<%- include("../partials/footer") %>

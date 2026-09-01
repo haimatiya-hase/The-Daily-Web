@@ -1,0 +1,76 @@
+<%- include("../partials/head", { pageTitle }) %>
+<%- include("../partials/header", { activePage }) %>
+
+<main>
+  <section class="hero container">
+    <div class="eyebrow">THE DAILY BRIEF</div>
+    <h1>החדשות החשובות,<br><span>במקום אחד.</span></h1>
+    <p class="hero-copy">פיד חדשות נקי, מהיר ומבוסס תוכן — תשתית המערכת מוכנה להתחבר עכשיו לנתונים האמיתיים.</p>
+    <div class="hero-actions">
+      <a class="button button-primary" href="#news-feed">לצפייה בפיד</a>
+      <a class="button button-secondary" href="/login">כניסת צוות</a>
+    </div>
+  </section>
+
+  <section class="container content-grid" aria-label="תוכן ראשי">
+    <div class="main-column">
+      <div class="section-heading" id="news-feed">
+        <div>
+          <div class="eyebrow">LATEST STORIES</div>
+          <h2>כתבות אחרונות</h2>
+        </div>
+        <span class="status-pill">תשתית מוכנה</span>
+      </div>
+
+      <form class="filters-card" id="feed-filters" novalidate>
+        <label>
+          חיפוש
+          <input type="search" name="search" placeholder="חיפוש לפי כותרת..." autocomplete="off">
+        </label>
+        <label>
+          קטגוריה
+          <select name="category">
+            <option value="">כל הקטגוריות</option>
+            <option value="news">חדשות</option>
+            <option value="culture">תרבות</option>
+            <option value="sport">ספורט</option>
+          </select>
+        </label>
+        <label>
+          מיון
+          <select name="sort">
+            <option value="publishedAt">החדשות ביותר</option>
+            <option value="popularity">הפופולריות ביותר</option>
+          </select>
+        </label>
+      </form>
+
+      <div class="feed" id="feed" aria-live="polite">
+        <article class="empty-state">
+          <div class="empty-icon">+</div>
+          <h3>הפיד מוכן לכתבות שלכם</h3>
+          <p>בשלב הבא נחבר את החיפוש, הסינון, המיון והטעינה האינסופית ל-MongoDB.</p>
+        </article>
+      </div>
+      <div class="loading-indicator" id="feed-loading" hidden>טוען כתבות...</div>
+    </div>
+
+    <aside class="sidebar" aria-label="סרגל צד">
+      <div class="weather-card" id="weather-widget">
+        <div class="eyebrow">LOCAL WEATHER</div>
+        <h2>מזג האוויר</h2>
+        <p>הווידג'ט יחובר לשירות חיצוני חינמי עם cache של עד 15 דקות.</p>
+        <span class="weather-placeholder">בהקמה</span>
+      </div>
+      <div class="note-card">
+        <div class="eyebrow">PROJECT STATUS</div>
+        <h3>שלב 01 — תשתית</h3>
+        <p>Express, MVC, EJS, מודלי MongoDB, מסלולים ותיעוד צוות.</p>
+        <a href="/api/health">בדיקת חיבור למערכת ←</a>
+      </div>
+    </aside>
+  </section>
+</main>
+
+<script src="/js/home.js" defer></script>
+<%- include("../partials/footer") %>

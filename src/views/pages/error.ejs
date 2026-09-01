@@ -1,0 +1,12 @@
+<%- include("../partials/head", { pageTitle }) %>
+<%- include("../partials/header", { activePage: "" }) %>
+
+<main class="container page-shell narrow-shell">
+  <section class="empty-state large-empty">
+    <div class="eyebrow">ERROR <%= statusCode %></div>
+    <h1><%= message %></h1>
+    <a class="button button-primary" href="/">חזרה לעמוד הבית</a>
+  </section>
+</main>
+
+<%- include("../partials/footer") %>

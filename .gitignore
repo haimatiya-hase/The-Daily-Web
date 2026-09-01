@@ -70,6 +70,15 @@ web_modules/
 .env.*
 !.env.example
 
+# Operating system and editor files
+.DS_Store
+.idea/
+
+# Local database dumps
+*.bson
+*.archive
+*.dump
+
 # parcel-bundler cache (https://parceljs.org/)
 .cache
 .parcel-cache

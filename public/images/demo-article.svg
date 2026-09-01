@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700" role="img" aria-labelledby="title desc">
+  <title id="title">The Daily Web demo image</title>
+  <desc id="desc">Abstract red and charcoal editorial illustration.</desc>
+  <rect width="1200" height="700" fill="#19202a"/>
+  <circle cx="900" cy="120" r="330" fill="#dc4e36"/>
+  <circle cx="1030" cy="570" r="260" fill="#f8e4df" opacity=".9"/>
+  <path d="M0 520 360 260l210 150 210-180 420 270v200H0Z" fill="#303b49"/>
+  <path d="M0 610 300 390l210 130 240-190 450 270v100H0Z" fill="#dc4e36" opacity=".8"/>
+  <text x="80" y="130" fill="#fff" font-family="Arial, sans-serif" font-size="54" font-weight="700">THE DAILY WEB</text>
+</svg>

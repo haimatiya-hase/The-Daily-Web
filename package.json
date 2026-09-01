@@ -1,0 +1,21 @@
+{
+  "name": "the-daily-web",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The Daily Web final project - MVC news management system",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "check": "node scripts/check-syntax.js",
+    "seed": "node scripts/seed-demo.js"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "ejs": "^3.1.10",
+    "express": "^4.21.2",
+    "mongoose": "^8.18.0"
+  }
+}

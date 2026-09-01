@@ -1,0 +1,29 @@
+# מעקב דרישות מול התשתית
+
+המסמך מפריד בין דרישות הפרויקט המקוריות לבין מה שהוקם כרגע.
+
+| דרישה | מיקום בתשתית | מצב |
+| --- | --- | --- |
+| Node.js + Express | `src/server.js`, `src/app.js` | הוכן |
+| MVC | `src/controllers`, `src/models`, `src/views` | הוכן כשלד |
+| MongoDB + Mongoose | `src/config/database.js`, `src/models` | הוכן כשלד |
+| EJS ו-HTML5 סמנטי | `src/views` | הוכן כשלד |
+| Vanilla JS + AJAX | `public/js` | הוכן כשלד |
+| ארבעה מודלים עיקריים | `src/models` | הוגדרו סכמות בסיס |
+| לוגים וטיפול שגיאות | `src/utils/logger.js`, `src/middleware` | הוכן |
+| סיסמאות לא גלויות | `src/utils/password.js` | הוכן מנגנון בסיסי |
+| שמירת session אחרי Restart | `src/models/session.model.js` | מודל מוכן; חיבור auth בהמשך |
+| פיד, חיפוש, סינון, מיון ו-infinite scroll | `src/controllers`, `src/routes`, `public/js` | בהמשך |
+| גרסאות כתבה ו-workflow | `src/models/article.model.js` | מודל בסיסי; חוקים בהמשך |
+| תגובות והגבלת 3 בדקה | `src/models/comment.model.js` | מודל בסיסי; middleware בהמשך |
+| Impact Analytics | `src/models/view-event.model.js`, `src/services/analytics.service.js` | בסיס נתונים ושירות ראשוני |
+| Weather widget | `src/services/weather.service.js` | שירות ראשוני; cache בהמשך |
+| 500 כתבות ונתוני דמו | `scripts/seed-demo.js` | הוכן להרצה עם MongoDB |
+
+## דרישות שצריך לאמת מול הצוות
+
+1. שכל חמשת הסטודנטים רשומים לאותו מרצה.
+2. אילו חבילות נוספות נלמדו ומותרות בקורס, במיוחד עבור session, העלאת
+   תמונות וגרפים.
+3. האם משתמשים ב-MongoDB מקומי או ב-Atlas.
+4. מה הם שמות המשתמש של כל חברי הקבוצה ב-GitHub כדי לצרף אותם למאגר.

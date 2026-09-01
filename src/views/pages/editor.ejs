@@ -1,0 +1,16 @@
+<%- include("../partials/head", { pageTitle }) %>
+<%- include("../partials/header", { activePage }) %>
+
+<main class="container page-shell">
+  <section class="dashboard-header">
+    <div class="eyebrow">EDITOR CONTROL ROOM</div>
+    <h1>אזור עורך</h1>
+    <p>שלום <%= user.displayName %>. כאן יאושרו כתבות, יוחזרו תיקונים ויוצג Impact Analytics.</p>
+  </section>
+  <section class="empty-state">
+    <h2>חדר הבקרה יתחבר כאן</h2>
+    <p>השלב הבא יוסיף את תור האישור, השוואת גרסאות וגרף הצפיות.</p>
+  </section>
+</main>
+
+<%- include("../partials/footer") %>
