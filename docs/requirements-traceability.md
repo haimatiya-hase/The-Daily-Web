@@ -8,17 +8,19 @@
 | MVC | `src/controllers`, `src/models`, `src/views` | הוכן כשלד |
 | MongoDB + Mongoose | `src/config/database.js`, `src/models` | הוכן כשלד |
 | EJS ו-HTML5 סמנטי | `src/views` | הוכן כשלד |
-| Vanilla JS + AJAX | `public/js/reporter.js` | מומש באזור הכתב; יתר האזורים בהמשך |
-| ארבעה מודלים עיקריים | `src/models` | הוגדרו סכמות בסיס |
+| Vanilla JS + AJAX | `public/js/reporter.js`, `public/js/editor.js`, `public/js` | אזורי הכתב והעורך הוכנו; פיד ותגובות בהמשך |
+| ארבעה מודלים עיקריים | `src/models` | הוגדרו סכמות בסיס עם גרסאות כתבה |
 | לוגים וטיפול שגיאות | `src/utils/logger.js`, `src/middleware` | הוכן |
-| סיסמאות לא גלויות | `src/utils/password.js` | הוכן מנגנון בסיסי |
-| שמירת session אחרי Restart | `src/models/session.model.js` | מודל מוכן; חיבור auth בהמשך |
-| פיד, חיפוש, סינון, מיון ו-infinite scroll | `src/controllers`, `src/routes`, `public/js` | בהמשך |
-| גרסאות כתבה ו-workflow | `src/models/article.model.js`, `src/controllers/reporter.controller.js` | מומשו מעברי הסטטוס שבאחריות הכתב ושמירת גרסה ציבורית נפרדת |
+| סיסמאות לא גלויות | `src/utils/password.js`, `test/auth-security.test.js` | הושלם ונבדק עם salt ו-scrypt |
+| Login ו-Logout | `src/controllers/auth.controller.js`, `src/views/pages/login.ejs` | הושלם עם הודעת שגיאה בטוחה |
+| Guest, Reporter ו-Editor | `src/models/user.model.js`, `src/middleware/auth.middleware.js` | הושלם ונבדק בצד השרת |
+| שמירת session אחרי Restart | `src/models/session.model.js`, `src/services/session.service.js` | הושלם עם MongoDB ו-cookie מוגן |
+| פיד, חיפוש, סינון, מיון ו-infinite scroll | `src/controllers`, `src/routes`, `public/js` | אזור העורך כולל חיפוש וסינון; הפיד בהמשך |
+| גרסאות כתבה ו-workflow | `src/models/article.model.js`, `src/services/article-workflow.service.js`, `src/controllers/reporter.controller.js` | מעברי הכתב והעורך הוכנו עם גרסה ציבורית נפרדת |
 | תגובות והגבלת 3 בדקה | `src/models/comment.model.js` | מודל בסיסי; middleware בהמשך |
 | Impact Analytics | `src/models/view-event.model.js`, `src/services/analytics.service.js` | בסיס נתונים ושירות ראשוני |
-| Weather widget | `src/services/weather.service.js` | שירות ראשוני; cache בהמשך |
-| 500 כתבות ונתוני דמו | `scripts/seed-demo.js` | הוכן להרצה עם MongoDB |
+| Weather widget | `src/services/weather.service.js`, `src/routes/api.routes.js`, `public/js/home.js` | הושלם עם cache של 15 דקות ומצב שגיאה בטוח |
+| 500 כתבות ונתוני דמו | `scripts/seed-demo.js`, `docs/mongodb-setup.md` | seed חוזר ובטוח לנתוני דמו מסומנים |
 
 ## מיפוי דרישות — Reporter Area
 

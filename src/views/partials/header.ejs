@@ -9,7 +9,20 @@
         </a>
         <nav class="main-nav" aria-label="ניווט ראשי">
           <a class="<%= activePage === 'home' ? 'active' : '' %>" href="/">עמוד הבית</a>
-          <a class="<%= activePage === 'login' ? 'active' : '' %>" href="/login">התחברות</a>
+          <%# Show account actions only when the session middleware loaded a user. %>
+          <% if (currentUser) { %>
+            <%# Link the user name to the dashboard allowed for the saved role. %>
+            <a href="/<%= currentUser.role %>"><%= currentUser.displayName %></a>
+            <%# Use POST for logout because it changes the saved authentication state. %>
+            <form class="nav-form" action="/logout" method="post">
+              <%# Submit logout without exposing the private session token to JavaScript. %>
+              <button class="nav-link-button" type="submit">התנתקות</button>
+            </form>
+          <%# Show the login link when the visitor does not have a valid session. %>
+          <% } else { %>
+            <%# Highlight the login link only while the login page is open. %>
+            <a class="<%= activePage === 'login' ? 'active' : '' %>" href="/login">התחברות</a>
+          <% } %>
         </nav>
       </div>
     </header>

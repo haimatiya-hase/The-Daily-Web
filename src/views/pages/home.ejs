@@ -59,8 +59,13 @@
       <div class="weather-card" id="weather-widget">
         <div class="eyebrow">LOCAL WEATHER</div>
         <h2>מזג האוויר</h2>
-        <p>הווידג'ט יחובר לשירות חיצוני חינמי עם cache של עד 15 דקות.</p>
-        <span class="weather-placeholder">בהקמה</span>
+        <%# Announce changing weather text to screen-reader users. %>
+        <div class="weather-content" id="weather-content" aria-live="polite">
+          <%# Show a short message while the browser requests current weather. %>
+          <p class="weather-status">טוען נתוני מזג אוויר...</p>
+        </div>
+        <%# Explain that repeated visits reuse the server cache. %>
+        <small class="weather-note">הנתונים נשמרים במטמון עד 15 דקות.</small>
       </div>
       <div class="note-card">
         <div class="eyebrow">PROJECT STATUS</div>

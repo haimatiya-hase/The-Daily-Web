@@ -73,6 +73,32 @@ a { color: inherit; }
 .main-nav a { color: var(--muted); text-decoration: none; }
 .main-nav a:hover, .main-nav a.active { color: var(--accent); }
 
+/* Keep the logout form aligned with the navigation links. */
+.nav-form {
+  /* Remove the browser's default form spacing. */
+  margin: 0;
+}
+
+/* Make the logout button look and behave like the nearby navigation links. */
+.nav-link-button {
+  /* Remove the default button border. */
+  border: 0;
+  /* Remove the default button background. */
+  background: transparent;
+  /* Match the muted color used by normal navigation links. */
+  color: var(--muted);
+  /* Inherit the same font settings as the navigation container. */
+  font: inherit;
+  /* Show that the button is interactive when the pointer moves over it. */
+  cursor: pointer;
+}
+
+/* Highlight logout consistently with the other navigation actions. */
+.nav-link-button:hover {
+  /* Use the site accent color during hover. */
+  color: var(--accent);
+}
+
 .hero { padding: 100px 0 82px; }
 .eyebrow { color: var(--accent); font-size: 11px; font-weight: 800; letter-spacing: 0.16em; }
 .hero h1, .page-shell h1 { max-width: 760px; margin: 12px 0 20px; font-size: clamp(42px, 7vw, 82px); line-height: 1.03; letter-spacing: -0.06em; }
@@ -124,12 +150,70 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--soft-accent
 .weather-card p, .note-card p { color: var(--muted); font-size: 14px; }
 .note-card a { color: var(--accent-dark); font-size: 13px; font-weight: 700; text-decoration: none; }
 
+/* Keep the live weather values aligned inside the sidebar card. */
+.weather-content {
+  /* Place the temperature and description on one readable row. */
+  display: flex;
+  /* Align both values vertically. */
+  align-items: center;
+  /* Add space between the temperature and description. */
+  gap: 12px;
+  /* Keep enough space for loading and unavailable messages. */
+  min-height: 58px;
+}
+
+/* Make the current temperature the main value in the card. */
+.weather-temperature {
+  /* Use a large size that remains compact in the sidebar. */
+  font-size: 38px;
+  /* Tighten the number's vertical spacing. */
+  line-height: 1;
+}
+
+/* Present the weather description as supporting information. */
+.weather-description {
+  /* Use the site's muted text color. */
+  color: var(--muted);
+  /* Emphasize the short condition label. */
+  font-weight: 700;
+}
+
+/* Remove extra spacing from live status messages. */
+.weather-status {
+  /* Override the default paragraph margin inside the card. */
+  margin: 0;
+}
+
+/* Explain the cache without competing with the current temperature. */
+.weather-note {
+  /* Display the note below the live values. */
+  display: block;
+  /* Use the existing muted text color. */
+  color: var(--muted);
+  /* Keep the explanation visually secondary. */
+  font-size: 11px;
+}
+
 .page-shell { padding-top: 60px; padding-bottom: 90px; }
 .narrow-shell { max-width: 680px; }
 .form-card { padding: 34px; }
 .form-card h1 { font-size: 46px; }
 .form-card form { display: grid; gap: 18px; margin-top: 28px; }
 .form-card .button { width: 100%; margin-top: 6px; }
+
+/* Present failed login feedback as a visible but calm error message. */
+.form-error {
+  /* Add readable space between the text and the border. */
+  padding: 12px 14px;
+  /* Draw a restrained red border around the message. */
+  border: 1px solid #c62828;
+  /* Match the rounded visual language of the form card. */
+  border-radius: 8px;
+  /* Use a light background so the message remains readable. */
+  background: #ffebee;
+  /* Use dark red text for sufficient contrast. */
+  color: #8e0000;
+}
 .form-note { color: var(--muted); font-size: 13px; }
 .dashboard-header { margin-bottom: 30px; }
 .dashboard-header h1 { font-size: clamp(40px, 6vw, 64px); }
@@ -178,6 +262,38 @@ code { padding: 2px 6px; background: var(--soft-accent); }
 .reporter-save-row { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--line); } /* Separate save controls from article fields. */
 .autosave-status { margin: 0; color: var(--muted); font-size: 13px; font-weight: 700; } /* Show autosave progress without distracting from writing. */
 .error-text { color: var(--accent-dark); } /* Highlight a save or submission error. */
+.editor-toolbar { align-items: end; }
+.editor-toolbar .button { width: 100%; }
+.editor-layout { display: grid; grid-template-columns: minmax(260px, 0.75fr) minmax(0, 1.7fr); gap: 24px; }
+.editor-queue { min-height: 520px; padding: 24px; }
+.editor-queue .section-heading { align-items: center; }
+.editor-queue h2, .editor-workspace h2 { margin: 5px 0 0; font-size: 28px; letter-spacing: -0.04em; }
+.editor-article-list { display: grid; gap: 8px; }
+.editor-article-item { display: grid; gap: 2px; width: 100%; padding: 13px; border: 1px solid var(--line); color: var(--ink); background: #fbfcfb; font: inherit; text-align: right; cursor: pointer; }
+.editor-article-item:hover, .editor-article-item.active { border-color: var(--accent); background: var(--soft-accent); }
+.editor-article-item strong { overflow: hidden; font-size: 14px; text-overflow: ellipsis; white-space: nowrap; }
+.editor-article-item span { color: var(--muted); font-size: 12px; }
+.editor-workspace { display: grid; align-content: start; gap: 24px; }
+.editor-form { display: grid; gap: 16px; margin-top: 24px; }
+.editor-form textarea { width: 100%; min-height: 90px; padding: 10px 12px; border: 1px solid var(--line); color: var(--ink); background: #fbfcfb; font: inherit; resize: vertical; }
+.editor-form textarea:focus { outline: 2px solid var(--soft-accent); border-color: var(--accent); }
+.editor-fields-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.editor-actions { display: flex; flex-wrap: wrap; gap: 10px; padding-top: 6px; }
+.editor-actions .button { flex: 1 1 160px; }
+.button-danger { border-color: #e2aaa0; color: var(--accent-dark); background: #fff7f5; }
+.button-danger:hover { border-color: var(--accent-dark); background: var(--soft-accent); }
+.editor-message { min-height: 25px; margin: -12px 0 18px; color: var(--muted); font-size: 14px; font-weight: 700; }
+.editor-message.is-error { color: var(--accent-dark); }
+.editor-message.is-success { color: #287052; }
+.editor-form-card.is-readonly { opacity: 0.85; }
+.editor-form-card.is-readonly input:disabled, .editor-form-card.is-readonly textarea:disabled { color: var(--muted); background: #f0f2f0; }
+.editor-compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.version-card { min-width: 0; padding: 18px; border: 1px solid var(--line); background: #fbfcfb; }
+.version-card-working { border-color: #e2aaa0; background: #fffaf8; }
+.version-card h3 { margin: 0 0 16px; font-size: 17px; }
+.version-card div > div { padding: 9px 0; border-top: 1px solid var(--line); }
+.version-card strong { display: block; color: var(--muted); font-size: 11px; }
+.version-card p, .version-card pre { margin: 3px 0 0; font: inherit; white-space: pre-wrap; overflow-wrap: anywhere; }
 
 @media (max-width: 780px) {
   .container { width: min(100% - 28px, 1160px); }
@@ -186,6 +302,7 @@ code { padding: 2px 6px; background: var(--soft-accent); }
   .hero { padding: 70px 0 56px; }
   .content-grid { grid-template-columns: 1fr; gap: 24px; }
   .filters-card { grid-template-columns: 1fr; }
+  .editor-layout, .editor-compare-grid, .editor-fields-row { grid-template-columns: 1fr; }
   .section-heading { align-items: start; flex-direction: column; }
   .reporter-header, .reporter-editor-heading, .reporter-card-footer, .reporter-save-row { align-items: stretch; flex-direction: column; } /* Stack reporter actions on small screens. */
   .reporter-grid, .reporter-form-row { grid-template-columns: 1fr; } /* Use one readable column on small screens. */

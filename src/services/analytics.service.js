@@ -1,16 +1,11 @@
-// Load cryptography, Mongoose, and the view event model.
-const crypto = require("node:crypto");
+// Load Mongoose, the view event model, and the shared hash helper.
 const mongoose = require("mongoose");
 const ViewEvent = require("../models/view-event.model");
+const { hashClientKey } = require("../utils/client-key");
 
 // Create a stable day key for grouped analytics.
 function createDayKey(date = new Date()) {
   return date.toISOString().slice(0, 10);
-}
-
-// Hash a client key before it is stored.
-function hashClientKey(value) {
-  return crypto.createHash("sha256").update(String(value)).digest("hex");
 }
 
 // Record one article view for later aggregation.

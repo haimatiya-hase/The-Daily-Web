@@ -1,5 +1,4 @@
 // Load native helpers, configuration, models, and password hashing.
-const { randomUUID } = require("node:crypto");
 const config = require("../src/config/environment");
 const { connectDatabase, disconnectDatabase } = require("../src/config/database");
 const User = require("../src/models/user.model");
@@ -7,103 +6,168 @@ const Article = require("../src/models/article.model");
 const Comment = require("../src/models/comment.model");
 const ViewEvent = require("../src/models/view-event.model");
 const { hashPassword } = require("../src/utils/password");
+const { hashClientKey } = require("../src/utils/client-key");
 
+// Keep demo data predictable for the defense and local development.
+const DEMO_ARTICLE_COUNT = 500;
+const DEMO_KEY_PREFIX = "demo-article-";
 const categories = ["חדשות", "כלכלה", "תרבות", "ספורט", "טכנולוגיה"];
 const statuses = ["draft", "pending_review", "published", "changes_requested"];
 
 // Create a user only once and update its demo password when needed.
 async function getOrCreateUser(username, displayName, role) {
   const passwordHash = await hashPassword(config.seedPassword);
+
   return User.findOneAndUpdate(
     { username },
     { username, displayName, role, passwordHash },
     { upsert: true, new: true, setDefaultsOnInsert: true }
-  );
+  ).exec();
 }
 
-// Build one article version with predictable demo content.
-function buildSnapshot(index, category, versionNumber = 1, publishedAt = null) {
+// Build one article version with clear content for the demo screen.
+function buildSnapshot(index, category, versionNumber, publishedAt = null, approvedBy = null) {
+  const updateText = versionNumber > 1 ? " - updated version" : "";
+
   return {
     versionNumber,
-    title: `כותרת דמו ${index}: סיפור חדשותי לדוגמה`,
-    summary: `תקציר כתבה ${index} לצורך הדגמת הפיד, החיפוש והסינון.`,
-    content: `זהו תוכן דמו של כתבה ${index}. התוכן מאפשר להציג את דרישות המערכת ולהדגים את מבנה הכתבה.`,
+    title: `Demo article ${index}${updateText}: A sample news story`,
+    summary: `Summary for demo article ${index}. It supports feed, search, and editor testing.`,
+    content: `This is demo content for article ${index}. It gives the team a safe record for testing the full article workflow.`,
     imageUrl: "/images/demo-article.svg",
     category,
     createdAt: new Date(),
-    publishedAt
+    publishedAt,
+    approvedAt: publishedAt,
+    approvedBy
   };
 }
 
-// Create demo users, articles, comments, and view events.
+// Create or update exactly 500 records owned by this seed script.
+async function upsertDemoArticles(reporters, editor) {
+  const operations = [];
+
+  for (let offset = 0; offset < DEMO_ARTICLE_COUNT; offset += 1) {
+    const index = offset + 1;
+    const status = statuses[offset % statuses.length];
+    const category = categories[offset % categories.length];
+    const author = reporters[offset % reporters.length];
+    const hasPublishedVersion = status === "published";
+    const versionNumber = hasPublishedVersion && index % 5 === 0 ? 2 : 1;
+    const publishedAt = hasPublishedVersion
+      ? new Date(Date.now() - index * 60 * 60 * 1000)
+      : null;
+
+    // Keep the working copy and public copy separate in the seed data.
+    const workingVersion = buildSnapshot(index, category, versionNumber);
+    const publishedVersion = hasPublishedVersion
+      ? buildSnapshot(index, category, versionNumber, publishedAt, editor._id)
+      : null;
+
+    operations.push({
+      updateOne: {
+        filter: { demoKey: `${DEMO_KEY_PREFIX}${index}` },
+        update: {
+          $set: {
+            demoKey: `${DEMO_KEY_PREFIX}${index}`,
+            author: author._id,
+            status,
+            workingVersion,
+            publishedVersion,
+            editorNote: status === "changes_requested"
+              ? "Please add a source and clarify the second paragraph."
+              : "",
+            revisionNumber: versionNumber,
+            viewCount: hasPublishedVersion ? index * 7 : 0
+          }
+        },
+        upsert: true
+      }
+    });
+  }
+
+  await Article.bulkWrite(operations, { ordered: true });
+
+  // Select the records by their private seed key for related demo data.
+  return Article.find({ demoKey: new RegExp(`^${DEMO_KEY_PREFIX}`) })
+    .select("+demoKey")
+    .sort({ demoKey: 1 })
+    .exec();
+}
+
+// Rebuild only comments and views that belong to the demo articles.
+async function refreshDemoRelatedData(articles) {
+  const articleIds = articles.map((article) => article._id);
+
+  // Delete only records connected to the 500 marked demo articles.
+  await Comment.deleteMany({ article: { $in: articleIds } }).exec();
+  await ViewEvent.deleteMany({ article: { $in: articleIds } }).exec();
+
+  // Add comments for the first 20 demo articles.
+  const commentDocuments = articles.slice(0, 20).map((article, index) => ({
+    article: article._id,
+    guestName: `Demo reader ${index + 1}`,
+    body: "This is a demo comment for the defense.",
+    clientKeyHash: hashClientKey(`demo-comment-${index + 1}`)
+  }));
+  await Comment.insertMany(commentDocuments);
+
+  // Add a fourteen-day view timeline for published demo articles.
+  const publishedArticles = articles
+    .filter((article) => article.status === "published")
+    .slice(0, 12);
+  const viewEvents = [];
+
+  for (const article of publishedArticles) {
+    const finalVersion = Number(article.publishedVersion.versionNumber) || 1;
+
+    for (let day = 0; day < 14; day += 1) {
+      const viewedAt = new Date(Date.now() - day * 24 * 60 * 60 * 1000);
+      const publicationVersion = finalVersion > 1 && day >= 7 ? 1 : finalVersion;
+
+      for (let count = 0; count < 3; count += 1) {
+        // Use a stable hash so the seeded client identifier is not stored openly.
+        const clientKey = `demo-view-${article._id}-${day}-${count}`;
+        viewEvents.push({
+          article: article._id,
+          publicationVersion,
+          viewedAt,
+          dayKey: viewedAt.toISOString().slice(0, 10),
+          clientKeyHash: hashClientKey(clientKey)
+        });
+      }
+    }
+  }
+
+  await ViewEvent.insertMany(viewEvents);
+}
+
+// Seed users, articles, comments, and views for the whole team.
 async function seed() {
   if (!config.mongoUri) {
     throw new Error("MONGODB_URI is required to seed demo data.");
   }
+
   if (!config.seedPassword) {
     throw new Error("SEED_PASSWORD is required to seed demo users.");
   }
 
-  await connectDatabase();
+  const connected = await connectDatabase();
+  if (!connected) {
+    throw new Error("MongoDB connection failed. Check MONGODB_URI and try again.");
+  }
+
   const reporters = await Promise.all([
-    getOrCreateUser("reporter.one", "כתב דמו 1", "reporter"),
-    getOrCreateUser("reporter.two", "כתב דמו 2", "reporter"),
-    getOrCreateUser("reporter.three", "כתב דמו 3", "reporter")
+    getOrCreateUser("reporter.one", "Demo reporter 1", "reporter"),
+    getOrCreateUser("reporter.two", "Demo reporter 2", "reporter"),
+    getOrCreateUser("reporter.three", "Demo reporter 3", "reporter")
   ]);
-  const editor = await getOrCreateUser("editor.one", "עורך דמו", "editor");
+  const editor = await getOrCreateUser("editor.one", "Demo editor", "editor");
+  const articles = await upsertDemoArticles(reporters, editor);
 
-  // Avoid creating more than the required 500 articles.
-  const existingCount = await Article.countDocuments();
-  const articlesToCreate = Math.max(0, 500 - existingCount);
-  const articleIds = [];
+  await refreshDemoRelatedData(articles);
 
-  // Spread articles across all workflow states.
-  for (let index = 0; index < articlesToCreate; index += 1) {
-    const status = statuses[index % statuses.length];
-    const author = reporters[index % reporters.length];
-    const publishedAt = status === "published" ? new Date(Date.now() - index * 3600000) : null;
-    const publishedVersion = status === "published" ? buildSnapshot(index + 1, categories[index % categories.length], 1, publishedAt) : null;
-
-    const article = await Article.create({
-      author: author._id,
-      status,
-      workingVersion: buildSnapshot(index + 1, categories[index % categories.length]),
-      publishedVersion,
-      editorNote: status === "changes_requested" ? "נא להוסיף מקור ולחדד את הפסקה השנייה." : undefined,
-      revisionNumber: 1,
-      viewCount: status === "published" ? (index + 1) * 7 : 0
-    });
-    articleIds.push(article._id);
-  }
-
-  // Add enough related data for the defense scenarios.
-  if (articleIds.length > 0) {
-    await Comment.insertMany(articleIds.slice(0, 20).map((articleId, index) => ({
-      article: articleId,
-      guestName: `קורא דמו ${index + 1}`,
-      body: "תגובה לדוגמה לצורך ההדגמה.",
-      clientKeyHash: randomUUID()
-    })));
-
-    const publishedIds = articleIds.slice(0, 12);
-    const viewEvents = [];
-    for (const articleId of publishedIds) {
-      for (let day = 0; day < 14; day += 1) {
-        const viewedAt = new Date(Date.now() - day * 86400000);
-        for (let count = 0; count < 3; count += 1) {
-          viewEvents.push({
-            article: articleId,
-            publicationVersion: 1,
-            viewedAt,
-            dayKey: viewedAt.toISOString().slice(0, 10)
-          });
-        }
-      }
-    }
-    await ViewEvent.insertMany(viewEvents);
-  }
-
-  console.log(`Seed complete. Existing: ${existingCount}, created: ${articlesToCreate}, editor: ${editor.username}`);
+  console.log(`Seed complete. Users: 4, articles: ${articles.length}, comments: 20, view timeline: ready.`);
 }
 
 seed()

@@ -4,7 +4,7 @@ const path = require("node:path");
 const { spawnSync } = require("node:child_process");
 
 // Check only project JavaScript folders.
-const roots = ["src", "public/js", "scripts", "tests"]; // Include the small built-in test folder in syntax checks.
+const roots = ["src", "public/js", "scripts", "test", "tests"]; // Include both shared and Reporter test folders in syntax checks.
 const files = [];
 
 // Collect JavaScript files recursively.
