@@ -12,11 +12,20 @@ const articleSnapshotSchema = new mongoose.Schema({
   createdAt: { type: Date },
   submittedAt: { type: Date },
   publishedAt: { type: Date },
+  approvedAt: { type: Date },
   approvedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" }
 }, { _id: false });
 
 // Store ownership, workflow status, versions, and counters.
 const articleSchema = new mongoose.Schema({
+  // Mark seed records so the demo script can update only its own data.
+  demoKey: {
+    type: String,
+    trim: true,
+    unique: true,
+    sparse: true,
+    select: false
+  },
   author: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
@@ -41,6 +50,20 @@ const articleSchema = new mongoose.Schema({
     type: String,
     trim: true,
     maxlength: 2000
+  },
+  lastEditedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User"
+  },
+  lastEditedAt: {
+    type: Date
+  },
+  reviewedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User"
+  },
+  reviewedAt: {
+    type: Date
   },
   revisionNumber: {
     type: Number,

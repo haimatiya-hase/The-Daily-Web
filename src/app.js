@@ -3,6 +3,7 @@ const express = require("express");
 const path = require("node:path");
 const webRoutes = require("./routes/web.routes");
 const apiRoutes = require("./routes/api.routes");
+const editorRoutes = require("./routes/editor.routes");
 const logger = require("./utils/logger");
 const { notFoundHandler, errorHandler } = require("./middleware/error.middleware");
 // Load the middleware that restores users from persistent session cookies.
@@ -46,6 +47,7 @@ function createApp() {
   });
 
   // Mount API routes before browser routes.
+  app.use("/api/editor", editorRoutes);
   app.use("/api", apiRoutes);
   app.use("/", webRoutes);
   app.use(notFoundHandler);

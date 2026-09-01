@@ -5,6 +5,22 @@ const assert = require("node:assert/strict");
 // Load the server-side middleware functions that protect private routes.
 const { requireAuth, requireRole } = require("../src/middleware/auth.middleware");
 
+// Create the Express request fields used by the permission middleware.
+function createRequest(user = null, options = {}) {
+  // Return a small request object that behaves like Express during these tests.
+  return {
+    // Store the connected user or null for a guest.
+    user,
+    // Use a browser page path unless a test selects an API path.
+    originalUrl: options.originalUrl || "/reporter",
+    // Return the selected Accept header through Express's req.get method.
+    get(headerName) {
+      // Return JSON only when the test explicitly requests it.
+      return headerName === "Accept" ? options.accept || "text/html" : "";
+    }
+  };
+}
+
 // Create a small response object that records status and rendered page values.
 function createResponse() {
   // Return only the Express methods required by the authentication middleware.
@@ -13,6 +29,8 @@ function createResponse() {
     statusCode: null,
     // Start without rendered output so the test can inspect the final result.
     rendered: null,
+    // Start without JSON output so API tests can inspect the final result.
+    jsonBody: null,
     // Save the selected status code and preserve Express method chaining.
     status(code) {
       // Record the status selected by the middleware.
@@ -24,6 +42,11 @@ function createResponse() {
     render(view, values) {
       // Save the rendered result for later assertions.
       this.rendered = { view, values };
+    },
+    // Record the JSON value that would be returned to an AJAX caller.
+    json(value) {
+      // Save the JSON response for later assertions.
+      this.jsonBody = value;
     }
   };
 }
@@ -31,7 +54,7 @@ function createResponse() {
 // Verify that guests cannot enter routes that require authentication.
 test("requireAuth blocks guests with status 401", () => {
   // Create a request without a loaded user to represent a guest.
-  const req = { user: null };
+  const req = createRequest();
   // Create a response recorder for the middleware result.
   const res = createResponse();
   // Track whether the protected route was allowed to continue.
@@ -49,7 +72,7 @@ test("requireAuth blocks guests with status 401", () => {
 // Verify that authenticated users can pass the general authentication guard.
 test("requireAuth allows a connected user", () => {
   // Create a request with the minimum authenticated user information.
-  const req = { user: { role: "reporter" } };
+  const req = createRequest({ role: "reporter" });
   // Create a response recorder that should remain unused.
   const res = createResponse();
   // Track whether the protected route was allowed to continue.
@@ -65,7 +88,7 @@ test("requireAuth allows a connected user", () => {
 // Verify that reporters can enter routes reserved for reporters.
 test("requireRole allows the matching role", () => {
   // Create a request for a connected reporter.
-  const req = { user: { role: "reporter" } };
+  const req = createRequest({ role: "reporter" });
   // Create a response recorder that should remain unused.
   const res = createResponse();
   // Track whether role validation allowed the route to continue.
@@ -81,7 +104,7 @@ test("requireRole allows the matching role", () => {
 // Verify that reporters cannot enter routes reserved for editors.
 test("requireRole blocks a different role with status 403", () => {
   // Create a request for a connected reporter.
-  const req = { user: { role: "reporter" } };
+  const req = createRequest({ role: "reporter" });
   // Create a response recorder for the expected permission error.
   const res = createResponse();
   // Track whether the editor route was incorrectly allowed to continue.
@@ -99,7 +122,7 @@ test("requireRole blocks a different role with status 403", () => {
 // Verify that guests receive authentication feedback before role validation.
 test("requireRole blocks guests with status 401", () => {
   // Create a request without a connected user.
-  const req = { user: null };
+  const req = createRequest();
   // Create a response recorder for the expected login error.
   const res = createResponse();
   // Track whether the protected route was incorrectly allowed to continue.
@@ -110,4 +133,20 @@ test("requireRole blocks guests with status 401", () => {
   assert.equal(res.statusCode, 401);
   // Confirm that the protected route did not continue.
   assert.equal(continued, false);
+});
+
+// Verify that protected API routes return JSON instead of rendering HTML.
+test("requireAuth returns JSON for unauthenticated API requests", () => {
+  // Create a guest request for a protected API address.
+  const req = createRequest(null, { originalUrl: "/api/editor/articles", accept: "application/json" });
+  // Create a response recorder for the expected JSON error.
+  const res = createResponse();
+  // Run the authentication guard for the sample API request.
+  requireAuth(req, res, () => {});
+  // Confirm that the API uses the unauthorized status code.
+  assert.equal(res.statusCode, 401);
+  // Confirm that the API returns the structured error code in JSON.
+  assert.equal(res.jsonBody.error.statusCode, 401);
+  // Confirm that no HTML template was rendered for the API request.
+  assert.equal(res.rendered, null);
 });

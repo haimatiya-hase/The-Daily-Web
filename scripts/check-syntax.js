@@ -4,7 +4,7 @@ const path = require("node:path");
 const { spawnSync } = require("node:child_process");
 
 // Check only project JavaScript folders.
-const roots = ["src", "public/js", "scripts"];
+const roots = ["src", "public/js", "scripts", "test"];
 const files = [];
 
 // Collect JavaScript files recursively.

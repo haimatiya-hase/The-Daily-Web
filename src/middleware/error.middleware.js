@@ -1,7 +1,13 @@
 const logger = require("../utils/logger");
+const { isApiRequest } = require("./auth.middleware");
 
 // Render a friendly page for unknown URLs.
 function notFoundHandler(req, res) {
+  if (isApiRequest(req)) {
+    res.status(404).json({ error: { statusCode: 404, message: "The requested route was not found." } });
+    return;
+  }
+
   res.status(404).render("pages/error", {
     pageTitle: "העמוד לא נמצא",
     statusCode: 404,
@@ -25,6 +31,17 @@ function errorHandler(error, req, res, next) {
 
   // Do not expose internal details for unexpected server errors.
   const statusCode = Number(error.statusCode) || 500;
+
+  if (isApiRequest(req)) {
+    res.status(statusCode).json({
+      error: {
+        statusCode,
+        message: statusCode === 500 ? "An unexpected server error occurred." : error.message
+      }
+    });
+    return;
+  }
+
   res.status(statusCode).render("pages/error", {
     pageTitle: "שגיאה",
     statusCode,

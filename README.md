@@ -30,6 +30,7 @@ npm run dev
 עדיין יעלה במצב תשתית-ממשק, ומסלול
 `/api/health` יציין שהחיבור למסד הנתונים אינו מוגדר. לצורך הפיצ'רים עצמם
 יש להגדיר `MONGODB_URI` בקובץ `.env`.
+הוראות מלאות למסד הנתונים המשותף נמצאות ב-[`docs/mongodb-setup.md`](docs/mongodb-setup.md).
 
 ## משתני סביבה
 
@@ -42,6 +43,7 @@ npm run dev
 npm start       # הרצת השרת
 npm run dev     # הרצה עם Node watch
 npm run check   # בדיקת syntax לכל קבצי JavaScript
+npm test        # בדיקות workflow ללא מסד נתונים
 npm run seed    # יצירת נתוני דמו; דורש SEED_PASSWORD ב-.env
 ```
 
@@ -77,6 +79,7 @@ docs/                    # חלוקת עבודה, branching ומעקב דריש�
 
 פירוט נוסף נמצא ב-`docs/branching-strategy.md` וב-`docs/team-division.md`.
 הגרסה המלאה של החלוקה נמצאת גם ב-[`docs/project-division-updated.docx`](docs/project-division-updated.docx).
+ההסבר לאזור העורך נמצא ב-[`docs/editor-area-walkthrough.md`](docs/editor-area-walkthrough.md).
 
 מסמך הדרישות המקורי נמצא ב-[`docs/project-requirements.pdf`](docs/project-requirements.pdf).
 

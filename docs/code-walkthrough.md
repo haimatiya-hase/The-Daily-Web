@@ -33,3 +33,9 @@ member must still read, run, and explain the code.
 - The browser requests weather from our API, so the external service stays behind the server.
 - Guests are visitors without a database user, while reporters and editors have stored roles.
 - Role middleware checks permissions on the server before a protected page is rendered.
+
+## Haim's editor area
+
+The editor implementation is explained in [`editor-area-walkthrough.md`](editor-area-walkthrough.md).
+It covers the protected REST routes, the browser AJAX flow, the workflow rules,
+and the difference between a working version and a published version.
