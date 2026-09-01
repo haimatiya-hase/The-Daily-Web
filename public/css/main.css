@@ -149,6 +149,50 @@ input:focus, select:focus { outline: 2px solid var(--soft-accent); border-color:
 .weather-card p, .note-card p { color: var(--muted); font-size: 14px; }
 .note-card a { color: var(--accent-dark); font-size: 13px; font-weight: 700; text-decoration: none; }
 
+/* Keep the live weather values aligned inside the sidebar card. */
+.weather-content {
+  /* Place the temperature and description on one readable row. */
+  display: flex;
+  /* Align both values vertically. */
+  align-items: center;
+  /* Add space between the temperature and description. */
+  gap: 12px;
+  /* Keep enough space for loading and unavailable messages. */
+  min-height: 58px;
+}
+
+/* Make the current temperature the main value in the card. */
+.weather-temperature {
+  /* Use a large size that remains compact in the sidebar. */
+  font-size: 38px;
+  /* Tighten the number's vertical spacing. */
+  line-height: 1;
+}
+
+/* Present the weather description as supporting information. */
+.weather-description {
+  /* Use the site's muted text color. */
+  color: var(--muted);
+  /* Emphasize the short condition label. */
+  font-weight: 700;
+}
+
+/* Remove extra spacing from live status messages. */
+.weather-status {
+  /* Override the default paragraph margin inside the card. */
+  margin: 0;
+}
+
+/* Explain the cache without competing with the current temperature. */
+.weather-note {
+  /* Display the note below the live values. */
+  display: block;
+  /* Use the existing muted text color. */
+  color: var(--muted);
+  /* Keep the explanation visually secondary. */
+  font-size: 11px;
+}
+
 .page-shell { padding-top: 60px; padding-bottom: 90px; }
 .narrow-shell { max-width: 680px; }
 .form-card { padding: 34px; }
