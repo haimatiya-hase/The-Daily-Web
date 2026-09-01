@@ -11,13 +11,15 @@
 | Vanilla JS + AJAX | `public/js` | הוכן כשלד |
 | ארבעה מודלים עיקריים | `src/models` | הוגדרו סכמות בסיס |
 | לוגים וטיפול שגיאות | `src/utils/logger.js`, `src/middleware` | הוכן |
-| סיסמאות לא גלויות | `src/utils/password.js` | הוכן מנגנון בסיסי |
-| שמירת session אחרי Restart | `src/models/session.model.js` | מודל מוכן; חיבור auth בהמשך |
+| סיסמאות לא גלויות | `src/utils/password.js`, `test/auth-security.test.js` | הושלם ונבדק עם salt ו-scrypt |
+| Login ו-Logout | `src/controllers/auth.controller.js`, `src/views/pages/login.ejs` | הושלם עם הודעת שגיאה בטוחה |
+| Guest, Reporter ו-Editor | `src/models/user.model.js`, `src/middleware/auth.middleware.js` | הושלם ונבדק בצד השרת |
+| שמירת session אחרי Restart | `src/models/session.model.js`, `src/services/session.service.js` | הושלם עם MongoDB ו-cookie מוגן |
 | פיד, חיפוש, סינון, מיון ו-infinite scroll | `src/controllers`, `src/routes`, `public/js` | בהמשך |
 | גרסאות כתבה ו-workflow | `src/models/article.model.js` | מודל בסיסי; חוקים בהמשך |
 | תגובות והגבלת 3 בדקה | `src/models/comment.model.js` | מודל בסיסי; middleware בהמשך |
 | Impact Analytics | `src/models/view-event.model.js`, `src/services/analytics.service.js` | בסיס נתונים ושירות ראשוני |
-| Weather widget | `src/services/weather.service.js` | שירות ראשוני; cache בהמשך |
+| Weather widget | `src/services/weather.service.js`, `src/routes/api.routes.js`, `public/js/home.js` | הושלם עם cache של 15 דקות ומצב שגיאה בטוח |
 | 500 כתבות ונתוני דמו | `scripts/seed-demo.js` | הוכן להרצה עם MongoDB |
 
 ## דרישות שצריך לאמת מול הצוות
