@@ -6,10 +6,16 @@
     <div class="eyebrow">TEAM ACCESS</div>
     <h1>כניסת צוות</h1>
     <p>כתבים ועורכים יתחברו כאן לפי התפקיד שלהם במערכת.</p>
+    <%# Show one generic message without revealing which credential failed. %>
+    <% if (errorMessage) { %>
+      <%# Announce authentication feedback immediately to screen readers. %>
+      <p class="form-error" role="alert"><%= errorMessage %></p>
+    <% } %>
     <form action="/login" method="post">
       <label>
         שם משתמש
-        <input type="text" name="username" required autocomplete="username">
+        <%# Preserve the safe username so only the password must be entered again. %>
+        <input type="text" name="username" value="<%= username %>" required autocomplete="username">
       </label>
       <label>
         סיסמה
@@ -17,7 +23,8 @@
       </label>
       <button class="button button-primary" type="submit">התחברות</button>
     </form>
-    <p class="form-note">מנגנון ההזדהות וה-session persistence יתווסף ב-PR הבא.</p>
+    <%# Explain which database users are allowed to use this protected form. %>
+    <p class="form-note">ההתחברות מיועדת לחברי צוות בעלי תפקיד Reporter או Editor.</p>
   </section>
 </main>
 

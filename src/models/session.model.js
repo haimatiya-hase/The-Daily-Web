@@ -16,9 +16,11 @@ const sessionSchema = new mongoose.Schema({
     index: true
   },
   expiresAt: {
+    // Store the exact date when this session stops being valid.
     type: Date,
-    required: true,
-    index: true
+
+    // Require an expiry date for every saved session.
+    required: true
   }
 }, { timestamps: true });
 

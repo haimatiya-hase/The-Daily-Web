@@ -6,6 +6,8 @@ const apiRoutes = require("./routes/api.routes");
 const editorRoutes = require("./routes/editor.routes");
 const logger = require("./utils/logger");
 const { notFoundHandler, errorHandler } = require("./middleware/error.middleware");
+// Load the middleware that restores users from persistent session cookies.
+const { loadSessionUser } = require("./middleware/auth.middleware");
 
 // Build the application without starting a network port.
 function createApp() {
@@ -20,6 +22,8 @@ function createApp() {
   app.use(express.urlencoded({ extended: false }));
   // Serve CSS, JavaScript, and local images.
   app.use(express.static(path.join(__dirname, "../public")));
+  // Restore the connected user before views and protected routes use req.user.
+  app.use(loadSessionUser);
 
   // Set values that every EJS page can use.
   app.use((req, res, next) => {
