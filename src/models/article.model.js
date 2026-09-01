@@ -12,6 +12,7 @@ const articleSnapshotSchema = new mongoose.Schema({
   createdAt: { type: Date },
   submittedAt: { type: Date },
   publishedAt: { type: Date },
+  approvedAt: { type: Date },
   approvedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" }
 }, { _id: false });
 
@@ -41,6 +42,20 @@ const articleSchema = new mongoose.Schema({
     type: String,
     trim: true,
     maxlength: 2000
+  },
+  lastEditedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User"
+  },
+  lastEditedAt: {
+    type: Date
+  },
+  reviewedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User"
+  },
+  reviewedAt: {
+    type: Date
   },
   revisionNumber: {
     type: Number,

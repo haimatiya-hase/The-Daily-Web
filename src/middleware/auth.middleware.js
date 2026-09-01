@@ -1,11 +1,27 @@
+// Detect API requests so AJAX callers receive JSON instead of an HTML page.
+function isApiRequest(req) {
+  const acceptHeader = req.get("Accept") || "";
+  return req.originalUrl.startsWith("/api/") || acceptHeader.includes("application/json");
+}
+
+// Send one consistent access error for browser pages and REST endpoints.
+function sendAccessError(req, res, statusCode, pageTitle, message) {
+  if (isApiRequest(req)) {
+    res.status(statusCode).json({ error: { statusCode, message } });
+    return;
+  }
+
+  res.status(statusCode).render("pages/error", {
+    pageTitle,
+    statusCode,
+    message
+  });
+}
+
 // Block users who do not have a loaded session user.
 function requireAuth(req, res, next) {
   if (!req.user) {
-    res.status(401).render("pages/error", {
-      pageTitle: "נדרשת התחברות",
-      statusCode: 401,
-      message: "יש להתחבר כדי לגשת לאזור זה."
-    });
+    sendAccessError(req, res, 401, "נדרשת התחברות", "יש להתחבר כדי לגשת לאזור זה.");
     return;
   }
 
@@ -16,21 +32,13 @@ function requireAuth(req, res, next) {
 function requireRole(...allowedRoles) {
   return (req, res, next) => {
     if (!req.user) {
-      res.status(401).render("pages/error", {
-        pageTitle: "נדרשת התחברות",
-        statusCode: 401,
-        message: "יש להתחבר כדי לגשת לאזור זה."
-      });
+      sendAccessError(req, res, 401, "נדרשת התחברות", "יש להתחבר כדי לגשת לאזור זה.");
       return;
     }
 
     // Check the role on the server, not only in the browser.
     if (!allowedRoles.includes(req.user.role)) {
-      res.status(403).render("pages/error", {
-        pageTitle: "אין הרשאה",
-        statusCode: 403,
-        message: "אין למשתמש המחובר הרשאה לבצע פעולה זו."
-      });
+      sendAccessError(req, res, 403, "אין הרשאה", "אין למשתמש המחובר הרשאה לבצע פעולה זו.");
       return;
     }
 
@@ -38,4 +46,4 @@ function requireRole(...allowedRoles) {
   };
 }
 
-module.exports = { requireAuth, requireRole };
+module.exports = { requireAuth, requireRole, isApiRequest };

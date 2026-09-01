@@ -8,13 +8,13 @@
 | MVC | `src/controllers`, `src/models`, `src/views` | הוכן כשלד |
 | MongoDB + Mongoose | `src/config/database.js`, `src/models` | הוכן כשלד |
 | EJS ו-HTML5 סמנטי | `src/views` | הוכן כשלד |
-| Vanilla JS + AJAX | `public/js` | הוכן כשלד |
-| ארבעה מודלים עיקריים | `src/models` | הוגדרו סכמות בסיס |
+| Vanilla JS + AJAX | `public/js/editor.js`, `public/js` | אזור העורך הוכן; פיד ותגובות בהמשך |
+| ארבעה מודלים עיקריים | `src/models` | הוגדרו סכמות בסיס עם גרסאות כתבה |
 | לוגים וטיפול שגיאות | `src/utils/logger.js`, `src/middleware` | הוכן |
 | סיסמאות לא גלויות | `src/utils/password.js` | הוכן מנגנון בסיסי |
 | שמירת session אחרי Restart | `src/models/session.model.js` | מודל מוכן; חיבור auth בהמשך |
-| פיד, חיפוש, סינון, מיון ו-infinite scroll | `src/controllers`, `src/routes`, `public/js` | בהמשך |
-| גרסאות כתבה ו-workflow | `src/models/article.model.js` | מודל בסיסי; חוקים בהמשך |
+| פיד, חיפוש, סינון, מיון ו-infinite scroll | `src/controllers`, `src/routes`, `public/js` | אזור העורך כולל חיפוש וסינון; הפיד בהמשך |
+| גרסאות כתבה ו-workflow | `src/models/article.model.js`, `src/services/article-workflow.service.js` | אזור העורך הוכן; מעברי כתב בהמשך |
 | תגובות והגבלת 3 בדקה | `src/models/comment.model.js` | מודל בסיסי; middleware בהמשך |
 | Impact Analytics | `src/models/view-event.model.js`, `src/services/analytics.service.js` | בסיס נתונים ושירות ראשוני |
 | Weather widget | `src/services/weather.service.js` | שירות ראשוני; cache בהמשך |

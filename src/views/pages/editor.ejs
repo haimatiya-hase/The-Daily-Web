@@ -5,12 +5,113 @@
   <section class="dashboard-header">
     <div class="eyebrow">EDITOR CONTROL ROOM</div>
     <h1>אזור עורך</h1>
-    <p>שלום <%= user.displayName %>. כאן יאושרו כתבות, יוחזרו תיקונים ויוצג Impact Analytics.</p>
+    <p>שלום <%= user.displayName %>. כאן מנהלים את תור האישור ואת תוכן הכתבות.</p>
   </section>
-  <section class="empty-state">
-    <h2>חדר הבקרה יתחבר כאן</h2>
-    <p>השלב הבא יוסיף את תור האישור, השוואת גרסאות וגרף הצפיות.</p>
+
+  <form class="filters-card editor-toolbar" id="editor-filters">
+    <label>
+      חיפוש לפי כותרת
+      <input id="editor-search" name="search" type="search" placeholder="לדוגמה: חדשות היום">
+    </label>
+    <label>
+      סינון לפי מצב
+      <select id="editor-status-filter" name="status">
+        <option value="">כל המצבים</option>
+        <option value="draft">בהכנה</option>
+        <option value="pending_review">ממתינה לאישור</option>
+        <option value="published">פורסמה</option>
+        <option value="changes_requested">הוחזרה לתיקונים</option>
+      </select>
+    </label>
+    <button class="button button-primary" type="submit">רענון רשימה</button>
+  </form>
+
+  <p class="editor-message" id="editor-message" role="status" aria-live="polite"></p>
+
+  <section class="editor-layout" aria-label="כלי ניהול כתבות">
+    <aside class="form-card editor-queue">
+      <div class="section-heading">
+        <div>
+          <div class="eyebrow">ARTICLE QUEUE</div>
+          <h2>כל הכתבות</h2>
+        </div>
+        <span class="status-pill" id="editor-total-count">0</span>
+      </div>
+      <div class="editor-article-list" id="editor-article-list" aria-live="polite">
+        <p class="loading-indicator">טוען כתבות...</p>
+      </div>
+    </aside>
+
+    <section class="editor-workspace">
+      <div class="form-card" id="editor-form-card">
+        <div class="section-heading">
+          <div>
+            <div class="eyebrow">SELECTED ARTICLE</div>
+            <h2 id="editor-selected-title">בחרו כתבה</h2>
+          </div>
+          <span class="status-pill" id="editor-selected-status">אין בחירה</span>
+        </div>
+
+        <form class="editor-form" id="editor-form">
+          <label>
+            כותרת
+            <input id="editor-title" name="title" type="text" maxlength="180" required>
+          </label>
+          <label>
+            תקציר
+            <textarea id="editor-summary" name="summary" maxlength="500" rows="3"></textarea>
+          </label>
+          <label>
+            תוכן מלא
+            <textarea id="editor-content" name="content" maxlength="20000" rows="12" required></textarea>
+          </label>
+          <div class="editor-fields-row">
+            <label>
+              קטגוריה
+              <input id="editor-category" name="category" type="text" maxlength="80" required>
+            </label>
+            <label>
+              כתובת תמונה
+              <input id="editor-image-url" name="imageUrl" type="url" maxlength="1000" placeholder="https://...">
+            </label>
+          </div>
+          <label>
+            הערת עורך להחזרה לתיקונים
+            <textarea id="editor-request-note" name="note" maxlength="2000" rows="3" placeholder="כתבו מה הכתב צריך לתקן..."></textarea>
+          </label>
+
+          <div class="editor-actions">
+            <button class="button button-secondary" id="editor-save" type="submit">שמירת עריכה</button>
+            <button class="button button-primary" id="editor-publish" type="button">אישור ופרסום</button>
+            <button class="button button-secondary" id="editor-request-changes" type="button">החזרה לתיקונים</button>
+            <button class="button button-danger" id="editor-delete" type="button">מחיקת כתבה</button>
+          </div>
+          <p class="form-note">שמירה אינה מפרסמת. רק כפתור האישור מחליף את הגרסה הציבורית.</p>
+        </form>
+      </div>
+
+      <section class="form-card editor-compare" aria-labelledby="editor-compare-title">
+        <div class="section-heading">
+          <div>
+            <div class="eyebrow">VERSION COMPARE</div>
+            <h2 id="editor-compare-title">השוואת גרסאות</h2>
+          </div>
+        </div>
+        <div class="editor-compare-grid">
+          <article class="version-card">
+            <h3>הגרסה הציבורית</h3>
+            <div id="editor-published-version"><p class="form-note">אין גרסה ציבורית.</p></div>
+          </article>
+          <article class="version-card version-card-working">
+            <h3>הגרסה שממתינה לבדיקה</h3>
+            <div id="editor-working-version"><p class="form-note">בחרו כתבה כדי לראות את הגרסה.</p></div>
+          </article>
+        </div>
+      </section>
+    </section>
   </section>
 </main>
 
+<!-- Load editor actions after the page structure is ready. -->
+<script src="/js/editor.js" defer></script>
 <%- include("../partials/footer") %>

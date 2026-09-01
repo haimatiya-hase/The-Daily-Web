@@ -30,3 +30,9 @@ member must still read, run, and explain the code.
 - Sessions have a MongoDB model so a server restart does not have to log users out.
 - View events are stored separately so analytics can group views by day and version.
 - The weather service is isolated in one file and can later receive a 15-minute cache.
+
+## Haim's editor area
+
+The editor implementation is explained in [`editor-area-walkthrough.md`](editor-area-walkthrough.md).
+It covers the protected REST routes, the browser AJAX flow, the workflow rules,
+and the difference between a working version and a published version.
