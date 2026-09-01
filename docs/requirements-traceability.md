@@ -18,7 +18,7 @@
 | תגובות והגבלת 3 בדקה | `src/models/comment.model.js` | מודל בסיסי; middleware בהמשך |
 | Impact Analytics | `src/models/view-event.model.js`, `src/services/analytics.service.js` | בסיס נתונים ושירות ראשוני |
 | Weather widget | `src/services/weather.service.js` | שירות ראשוני; cache בהמשך |
-| 500 כתבות ונתוני דמו | `scripts/seed-demo.js` | הוכן להרצה עם MongoDB |
+| 500 כתבות ונתוני דמו | `scripts/seed-demo.js`, `docs/mongodb-setup.md` | seed חוזר ובטוח לנתוני דמו מסומנים |
 
 ## דרישות שצריך לאמת מול הצוות
 

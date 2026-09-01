@@ -18,6 +18,14 @@ const articleSnapshotSchema = new mongoose.Schema({
 
 // Store ownership, workflow status, versions, and counters.
 const articleSchema = new mongoose.Schema({
+  // Mark seed records so the demo script can update only its own data.
+  demoKey: {
+    type: String,
+    trim: true,
+    unique: true,
+    sparse: true,
+    select: false
+  },
   author: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
