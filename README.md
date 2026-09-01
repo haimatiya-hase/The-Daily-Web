@@ -38,15 +38,27 @@ JavaScript with AJAX. No frontend framework is required.
 
 ## Editorial workflow
 
-```mermaid
-flowchart LR
-    A[Reporter creates draft] --> B[Autosave to MongoDB]
-    B --> C[Submit for review]
-    C --> D{Editor decision}
-    D -->|Request changes| E[Reporter updates draft]
-    E --> C
-    D -->|Publish| F[Approved public version]
-    F --> G[Readers view article]
+```text
+Reporter creates draft
+        │
+        ▼
+Autosave to MongoDB
+        │
+        ▼
+Submit for editor review
+        │
+        ▼
+   Editor decision
+     ┌──┴──────────────┐
+     │                 │
+     ▼                 ▼
+Request changes     Publish
+     │                 │
+     └──► Reporter     ▼
+          updates   Approved public version
+                         │
+                         ▼
+                    Readers view article
 ```
 
 The system keeps the reporter's working version separate from the last
@@ -55,23 +67,22 @@ an updated article is being reviewed.
 
 ## Architecture
 
-```mermaid
-flowchart TB
-    Browser[Browser: EJS + CSS + Vanilla JS]
-    Routes[Express routes]
-    Controllers[Controllers]
-    Services[Services and business rules]
-    Models[Mongoose models]
-    DB[(MongoDB)]
-    Weather[Open-Meteo weather service]
-
-    Browser --> Routes
-    Routes --> Controllers
-    Controllers --> Services
-    Controllers --> Models
-    Services --> Models
-    Models --> DB
-    Services --> Weather
+```text
+┌────────────────────────────────────────┐
+│ Browser: EJS + CSS + Vanilla JavaScript │
+└──────────────────┬─────────────────────┘
+                   ▼
+             Express routes
+                   │
+                   ▼
+              Controllers
+              ┌────┴────┐
+              ▼         ▼
+          Services    Mongoose models
+              │         │
+              ▼         ▼
+       Open-Meteo    MongoDB
+       weather API
 ```
 
 ## Features
