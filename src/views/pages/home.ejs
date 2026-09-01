@@ -3,12 +3,37 @@
 
 <main>
   <section class="hero container">
-    <div class="eyebrow">THE DAILY BRIEF</div>
-    <h1>החדשות החשובות,<br><span>במקום אחד.</span></h1>
-    <p class="hero-copy">פיד חדשות נקי, מהיר ומבוסס תוכן — תשתית המערכת מוכנה להתחבר עכשיו לנתונים האמיתיים.</p>
-    <div class="hero-actions">
-      <a class="button button-primary" href="#news-feed">לצפייה בפיד</a>
-      <a class="button button-secondary" href="/login">כניסת צוות</a>
+    <div class="hero-layout">
+      <div class="hero-content">
+        <div class="eyebrow"><span class="eyebrow-line"></span>THE DAILY BRIEF</div>
+        <p class="hero-kicker">NEWS / SIGNAL / IMPACT</p>
+        <h1>החדשות החשובות,<br><span>במקום אחד.</span></h1>
+        <p class="hero-copy">פיד חדשות נקי, מהיר ומבוסס תוכן — עם סביבת עבודה שמחברת בין כתבים, עורכים וקוראים.</p>
+        <div class="hero-actions">
+          <a class="button button-primary" href="#news-feed">לצפייה בפיד <span aria-hidden="true">←</span></a>
+          <a class="button button-secondary" href="/login">כניסת צוות <span aria-hidden="true">↗</span></a>
+        </div>
+        <div class="hero-trust" aria-label="נתוני המערכת">
+          <div><strong>24/7</strong><span>NEWS FLOW</span></div>
+          <div><strong>500+</strong><span>DEMO STORIES</span></div>
+          <div><strong>01</strong><span>SHARED SPACE</span></div>
+        </div>
+      </div>
+
+      <div class="hero-visual" aria-label="תצוגה גרפית של חדר החדשות">
+        <div class="visual-orbit visual-orbit-one"></div>
+        <div class="visual-orbit visual-orbit-two"></div>
+        <div class="signal-card signal-card-main">
+          <div class="signal-card-top"><span class="live-chip"><i></i> LIVE</span><span>NEWS INTELLIGENCE</span></div>
+          <div class="signal-headline">THE NEXT<br><em>STORY</em></div>
+          <div class="signal-bars" aria-hidden="true">
+            <span class="bar-one"></span><span class="bar-two"></span><span class="bar-three"></span><span class="bar-four"></span><span class="bar-five"></span><span class="bar-six"></span><span class="bar-seven"></span>
+          </div>
+          <div class="signal-card-bottom"><span>EDITORIAL PULSE</span><strong>+ 86.4%</strong></div>
+        </div>
+        <div class="floating-card floating-card-top"><span class="floating-label">STATUS</span><strong>מערכת עריכה חיה</strong><span class="floating-value">CONNECTED</span></div>
+        <div class="floating-card floating-card-bottom"><span class="floating-label">TODAY'S SIGNAL</span><strong>הסיפור הבא מתחיל כאן</strong></div>
+      </div>
     </div>
   </section>
 
@@ -19,7 +44,7 @@
           <div class="eyebrow">LATEST STORIES</div>
           <h2>כתבות אחרונות</h2>
         </div>
-        <span class="status-pill">תשתית מוכנה</span>
+        <span class="status-pill status-live"><i></i> תשתית מוכנה</span>
       </div>
 
       <form class="filters-card" id="feed-filters" novalidate>
@@ -46,10 +71,11 @@
       </form>
 
       <div class="feed" id="feed" aria-live="polite">
-        <article class="empty-state">
-          <div class="empty-icon">+</div>
-          <h3>הפיד מוכן לכתבות שלכם</h3>
-          <p>בשלב הבא נחבר את החיפוש, הסינון, המיון והטעינה האינסופית ל-MongoDB.</p>
+        <article class="empty-state feed-empty">
+          <div class="empty-visual" aria-hidden="true"><span></span><span></span><span></span></div>
+          <div class="eyebrow">FEED PREVIEW</div>
+          <h3>הפיד מתעורר בקרוב</h3>
+          <p>תשתית החדשות מחוברת. החיפוש, הסינון, המיון והטעינה האינסופית יופעלו עם חיבור פיד הכתבות.</p>
         </article>
       </div>
       <div class="loading-indicator" id="feed-loading" hidden>טוען כתבות...</div>
@@ -57,8 +83,8 @@
 
     <aside class="sidebar" aria-label="סרגל צד">
       <div class="weather-card" id="weather-widget">
-        <div class="eyebrow">LOCAL WEATHER</div>
-        <h2>מזג האוויר</h2>
+        <div class="card-topline"><div class="eyebrow">LOCAL WEATHER</div><span class="live-chip"><i></i> LIVE</span></div>
+        <div class="weather-heading"><div><h2>מזג האוויר</h2><p>ירושלים, ישראל</p></div><span class="weather-symbol" aria-hidden="true">☼</span></div>
         <%# Announce changing weather text to screen-reader users. %>
         <div class="weather-content" id="weather-content" aria-live="polite">
           <%# Show a short message while the browser requests current weather. %>
@@ -68,9 +94,11 @@
         <small class="weather-note">הנתונים נשמרים במטמון עד 15 דקות.</small>
       </div>
       <div class="note-card">
-        <div class="eyebrow">PROJECT STATUS</div>
+        <div class="card-topline"><div class="eyebrow">PROJECT STATUS</div><span class="project-index">01</span></div>
         <h3>שלב 01 — תשתית</h3>
         <p>Express, MVC, EJS, מודלי MongoDB, מסלולים ותיעוד צוות.</p>
+        <div class="progress-line" aria-label="שלב ראשון מתוך ארבעה"><span></span></div>
+        <small class="progress-label">FOUNDATION LAYER <b>25%</b></small>
         <a href="/api/health">בדיקת חיבור למערכת ←</a>
       </div>
     </aside>

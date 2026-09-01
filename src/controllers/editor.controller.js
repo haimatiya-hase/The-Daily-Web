@@ -11,6 +11,7 @@ const {
 
 // Render the editor workspace for an authenticated editor.
 function showEditorDashboard(req, res) {
+  // Pass the logged-in editor to the page so the header can show the account.
   res.render("pages/editor", {
     pageTitle: "אזור עורך",
     activePage: "editor",
@@ -20,6 +21,7 @@ function showEditorDashboard(req, res) {
 
 // Escape search text before it becomes a MongoDB regular expression.
 function escapeRegex(value) {
+  // Escape special characters so search text stays a normal text search.
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
@@ -31,9 +33,11 @@ function readPositiveInteger(value, fallback) {
 
 // Return only article data that the editor screen needs.
 function serializeArticle(article) {
+  // Support both Mongoose documents and plain objects returned by lean queries.
   const value = article.toObject ? article.toObject() : article;
 
   if (value.author && typeof value.author === "object") {
+    // Return only safe author fields instead of the full populated document.
     value.author = {
       id: String(value.author._id || value.author.id),
       displayName: value.author.displayName,
@@ -64,6 +68,7 @@ async function findArticle(articleId) {
 // List all articles for the editor queue with simple search and status filters.
 async function listArticles(req, res, next) {
   try {
+    // Read filters from the query string and apply safe default pagination.
     const status = String(req.query.status || "").trim();
     const search = String(req.query.search || "").trim();
     const page = readPositiveInteger(req.query.page, 1);
@@ -88,6 +93,7 @@ async function listArticles(req, res, next) {
       ];
     }
 
+    // Load the current page and the total count at the same time.
     const [articles, total] = await Promise.all([
       Article.find(filter)
         .populate("author", "displayName username")
@@ -99,6 +105,7 @@ async function listArticles(req, res, next) {
       Article.countDocuments(filter).exec()
     ]);
 
+    // Return a predictable response that the editor browser code can render.
     res.json({
       items: articles.map(serializeArticle),
       pagination: {
@@ -116,7 +123,9 @@ async function listArticles(req, res, next) {
 // Return the selected article with both working and published versions.
 async function getArticle(req, res, next) {
   try {
+    // Load one article only after validating its MongoDB identifier.
     const article = await findArticle(req.params.articleId);
+    // Send both the editable and public versions to the editor.
     res.json({ article: serializeArticle(article) });
   } catch (error) {
     next(error);
@@ -126,7 +135,9 @@ async function getArticle(req, res, next) {
 // Save an editor correction without publishing it automatically.
 async function updateArticle(req, res, next) {
   try {
+    // Find the article before applying the workflow service rules.
     const article = await findArticle(req.params.articleId);
+    // Validate and save an editor correction without publishing it.
     applyEditorEdit(article, req.body, req.user._id, new Date());
     await article.save();
     res.json({ article: serializeArticle(article) });
@@ -138,7 +149,9 @@ async function updateArticle(req, res, next) {
 // Approve the working version and make it visible to readers.
 async function publishArticle(req, res, next) {
   try {
+    // Find the article before changing its public state.
     const article = await findArticle(req.params.articleId);
+    // Move the approved working version into the public version field.
     approveArticle(article, req.user._id, new Date());
     await article.save();
     res.json({ article: serializeArticle(article) });
@@ -150,7 +163,9 @@ async function publishArticle(req, res, next) {
 // Send a pending article back to the reporter with a required note.
 async function requestArticleChanges(req, res, next) {
   try {
+    // Find the article before recording the editor's correction note.
     const article = await findArticle(req.params.articleId);
+    // The workflow service validates that a useful note was supplied.
     requestChanges(article, req.user._id, req.body.note, new Date());
     await article.save();
     res.json({ article: serializeArticle(article) });
@@ -162,7 +177,9 @@ async function requestArticleChanges(req, res, next) {
 // Delete any article because an editor owns content administration.
 async function deleteArticle(req, res, next) {
   try {
+    // Confirm that the article exists before deleting it.
     await findArticle(req.params.articleId);
+    // Editors are allowed to remove any article from the content system.
     await Article.findByIdAndDelete(req.params.articleId).exec();
     res.json({ deleted: true, articleId: req.params.articleId });
   } catch (error) {

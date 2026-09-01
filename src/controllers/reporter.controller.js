@@ -2,6 +2,14 @@ const mongoose = require("mongoose"); // Load Mongoose so article IDs can be che
 const Article = require("../models/article.model"); // Load the Article model so reporter articles can be stored and read.
 const HttpError = require("../utils/http-error"); // Load the simple HTTP error class for expected request errors.
 
+const FIELD_LIMITS = Object.freeze({ // Keep reporter limits equal to the Article schema limits.
+  title: 180, // Limit the headline length used by the feed and article page.
+  summary: 500, // Limit the short text shown in the feed.
+  content: 20000, // Limit the full article body to a practical size.
+  imageUrl: 1000, // Limit the stored image address.
+  category: 80 // Limit the category value used by filters.
+});
+
 const statusLabels = Object.freeze({ // Keep the Hebrew label for each stored workflow status.
   draft: "בהכנה", // Show that the reporter can still edit the article.
   pending_review: "ממתינה לאישור עורך", // Show that the editor must review the article.
@@ -17,16 +25,31 @@ function canReporterEdit(status) { // Decide whether the reporter may change an 
   return ["draft", "published", "changes_requested"].includes(status); // Block editing only while an editor is reviewing the article.
 }
 
-function validateSubmission(snapshot) { // Check the fields that must exist before editor review.
-  if (!cleanText(snapshot.title)) return "יש להזין כותרת לפני השליחה."; // Require an article title.
-  if (!cleanText(snapshot.summary)) return "יש להזין תקציר לפני השליחה."; // Require a short summary.
-  if (!cleanText(snapshot.category)) return "יש לבחור קטגוריה לפני השליחה."; // Require a category for filtering.
-  if (!cleanText(snapshot.imageUrl)) return "יש להזין כתובת תמונה לפני השליחה."; // Require the main article image.
-  if (!cleanText(snapshot.content)) return "יש להזין תוכן לפני השליחה."; // Require the full article body.
-  return null; // Return no message when every required field exists.
+function validateArticleFields(snapshot = {}, { requireAll = false } = {}) { // Validate reporter data before it reaches Mongoose.
+  const source = snapshot && typeof snapshot === "object" ? snapshot : {}; // Replace null or primitive input with an empty form.
+  const values = Object.fromEntries(Object.keys(FIELD_LIMITS).map((field) => [field, cleanText(source[field])])); // Normalize every editable field once.
+
+  if (requireAll) { // Apply required-field checks only when the reporter submits for review.
+    if (!values.title) return "יש להזין כותרת לפני השליחה."; // Require an article title.
+    if (!values.summary) return "יש להזין תקציר לפני השליחה."; // Require a short summary.
+    if (!values.category) return "יש לבחור קטגוריה לפני השליחה."; // Require a category for filtering.
+    if (!values.imageUrl) return "יש להזין כתובת תמונה לפני השליחה."; // Require the main article image.
+    if (!values.content) return "יש להזין תוכן לפני השליחה."; // Require the full article body.
+  }
+
+  for (const [field, limit] of Object.entries(FIELD_LIMITS)) { // Check every maximum before saving the draft.
+    if (values[field].length > limit) return `${field} ארוך מדי. המגבלה היא ${limit} תווים.`; // Return a clear client-safe error.
+  }
+
+  return null; // Return no message when all required and length rules pass.
+}
+
+function validateSubmission(snapshot) { // Check all fields needed before editor review.
+  return validateArticleFields(snapshot, { requireAll: true }); // Reuse the same rules used by autosave.
 }
 
 function buildWorkingVersion(article, input) { // Build the editable version from the reporter form.
+  const form = input && typeof input === "object" ? input : {}; // Keep malformed request bodies from causing a server exception.
   const currentVersion = article.workingVersion || {}; // Keep dates and version data from the current draft.
   const publishedVersionNumber = Number(article.publishedVersion?.versionNumber || 0); // Read the last public version number.
   const currentVersionNumber = Number(currentVersion.versionNumber || 1); // Read the current working version number.
@@ -36,11 +59,11 @@ function buildWorkingVersion(article, input) { // Build the editable version fro
 
   return { // Return only fields that a reporter is allowed to change.
     versionNumber, // Store the working version number.
-    title: cleanText(input.title), // Store the trimmed title.
-    summary: cleanText(input.summary), // Store the trimmed summary.
-    content: cleanText(input.content), // Store the trimmed article body.
-    imageUrl: cleanText(input.imageUrl), // Store the trimmed image address.
-    category: cleanText(input.category), // Store the trimmed category.
+    title: cleanText(form.title), // Store the trimmed title.
+    summary: cleanText(form.summary), // Store the trimmed summary.
+    content: cleanText(form.content), // Store the trimmed article body.
+    imageUrl: cleanText(form.imageUrl), // Store the trimmed image address.
+    category: cleanText(form.category), // Store the trimmed category.
     createdAt, // Store when this draft version started.
     submittedAt: null // Mark the changed version as not submitted yet.
   };
@@ -141,7 +164,10 @@ async function saveReporterArticle(req, res, next) { // Save one reporter draft 
   try { // Forward unexpected database errors to the shared error handler.
     const article = await findReporterArticle(req.params.articleId, req.user._id); // Load the article with ownership protection.
     if (!canReporterEdit(article.status)) throw new HttpError(409, "לא ניתן לערוך כתבה בזמן שהיא ממתינה לאישור."); // Prevent edits during editor review.
-    article.workingVersion = buildWorkingVersion(article, req.body); // Replace only the private working version with the submitted form fields.
+    const nextWorkingVersion = buildWorkingVersion(article, req.body); // Build only the private version from the submitted fields.
+    const validationMessage = validateArticleFields(nextWorkingVersion); // Check draft limits without requiring incomplete drafts to be complete.
+    if (validationMessage) throw new HttpError(400, validationMessage); // Reject invalid draft data before writing to MongoDB.
+    article.workingVersion = nextWorkingVersion; // Replace only the private working version with the validated fields.
     await article.save(); // Persist the autosaved version in MongoDB.
     res.json({ message: "הטיוטה נשמרה.", article: toReporterArticle(article.toObject()) }); // Confirm the save and return the current state.
   } catch (error) { // Catch expected and unexpected errors.

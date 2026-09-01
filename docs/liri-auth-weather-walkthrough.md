@@ -44,7 +44,7 @@ This page explains Liri's project area in simple English for the project defense
 - The service requests only temperature and weather code for the configured location.
 - A successful response is cached in server memory for up to 15 minutes.
 - Repeated requests inside that window reuse the cache instead of calling the service again.
-- The service keeps the last successful response as a fallback after a temporary failure.
+- The service never displays a cached response after the fifteen-minute freshness limit.
 - `GET /api/weather` returns only the small set of values required by the browser.
 - `public/js/home.js` converts weather codes into short readable descriptions.
 - The widget shows a safe unavailable message instead of technical error details.

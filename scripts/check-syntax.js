@@ -20,14 +20,17 @@ function collect(directory) {
 }
 
 for (const root of roots) {
+  // Resolve each project folder relative to the command's working directory.
   const absoluteRoot = path.resolve(process.cwd(), root); // Build the full folder path once.
   if (fs.existsSync(absoluteRoot)) collect(absoluteRoot); // Check optional folders only when they exist.
 }
 
 // Run Node's built-in syntax checker for each file.
 for (const file of files) {
+  // Ask Node to parse the file without executing application code.
   const result = spawnSync(process.execPath, ["--check", file], { stdio: "inherit" });
   if (result.status !== 0) {
+    // Stop at the first syntax error and keep its failure status.
     process.exit(result.status || 1);
   }
 }

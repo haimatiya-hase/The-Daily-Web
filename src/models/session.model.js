@@ -3,12 +3,14 @@ const mongoose = require("mongoose");
 
 // Store only a session token hash and its expiry date.
 const sessionSchema = new mongoose.Schema({
+  // Store the hash of the browser token, never the usable token itself.
   tokenHash: {
     type: String,
     required: true,
     unique: true,
     index: true
   },
+  // Link the session to the authenticated user.
   user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",

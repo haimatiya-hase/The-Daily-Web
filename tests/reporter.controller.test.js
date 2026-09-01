@@ -44,6 +44,11 @@ test("submission requires every visible article field", () => { // Verify the si
   assert.match(validateSubmission({ ...completeSnapshot, content: "" }), /תוכן/); // Reject a missing article body.
 });
 
+test("submission rejects an article field that is too long", () => { // Verify server-side maximum length validation.
+  const oversizedSnapshot = { title: "x".repeat(181), summary: "תקציר", category: "חדשות", imageUrl: "/image.svg", content: "תוכן" }; // Build a complete article with an oversized title.
+  assert.match(validateSubmission(oversizedSnapshot), /ארוך מדי/); // Return a clear validation message before MongoDB writes it.
+});
+
 test("editing a published article starts a private newer version", () => { // Verify public content protection during reporter edits.
   const publishedAt = new Date("2026-01-01T10:00:00.000Z"); // Use a fixed public date for the example.
   const article = { status: "published", workingVersion: { versionNumber: 2, createdAt: publishedAt }, publishedVersion: { versionNumber: 2, publishedAt } }; // Build an article whose working and public versions match.
@@ -62,6 +67,13 @@ test("autosave keeps the same version number for an existing draft", () => { // 
   assert.equal(result.versionNumber, 1); // Keep the current draft version number.
   assert.equal(result.createdAt, createdAt); // Keep the original draft creation time.
   assert.equal(result.title, "טיוטה"); // Trim surrounding spaces from saved text.
+});
+
+test("malformed reporter input becomes an empty safe draft", () => { // Verify null request bodies cannot crash the version builder.
+  const article = { status: "draft", workingVersion: { versionNumber: 1, createdAt: new Date() }, publishedVersion: null }; // Build a normal draft shell.
+  const result = buildWorkingVersion(article, null); // Simulate a JSON null body from a client.
+  assert.equal(result.title, ""); // Convert the invalid body into a safe empty title.
+  assert.equal(result.content, ""); // Convert the invalid body into a safe empty body.
 });
 
 test("create action always assigns the logged-in reporter as owner", async (context) => { // Verify server-side ownership during article creation.

@@ -4,6 +4,7 @@ const path = require("node:path");
 
 // Load values from .env without adding another package.
 function loadLocalEnvironment(filePath = path.resolve(process.cwd(), ".env")) {
+  // Keep startup working when a developer has not created a local .env file.
   if (!fs.existsSync(filePath)) {
     return;
   }
@@ -12,6 +13,7 @@ function loadLocalEnvironment(filePath = path.resolve(process.cwd(), ".env")) {
 
   // Read the file one line at a time.
   for (const line of contents.split(/\r?\n/)) {
+    // Remove spaces before checking whether this line contains a setting.
     const trimmed = line.trim();
     if (!trimmed || trimmed.startsWith("#")) {
       continue;
@@ -20,6 +22,7 @@ function loadLocalEnvironment(filePath = path.resolve(process.cwd(), ".env")) {
     // Find the separator between the key and the value.
     const separatorIndex = trimmed.indexOf("=");
     if (separatorIndex === -1) {
+      // Ignore lines that are not written as KEY=value.
       continue;
     }
 
@@ -30,6 +33,7 @@ function loadLocalEnvironment(filePath = path.resolve(process.cwd(), ".env")) {
 
     // Keep real environment variables more important than .env values.
     if (key && process.env[key] === undefined) {
+      // Set only missing values so shell variables keep priority.
       process.env[key] = value;
     }
   }

@@ -1,19 +1,19 @@
-<%- include("../partials/head", { pageTitle }) %>
-<%- include("../partials/header", { activePage }) %>
+<%- include("../partials/head", { pageTitle }) %> <%# Start the shared HTML document. %>
+<%- include("../partials/header", { activePage }) %> <%# Show the shared navigation for the editor. %>
 
-<main class="container page-shell">
-  <section class="dashboard-header">
+<main class="container page-shell"> <%# Hold the editor dashboard layout. %>
+  <section class="dashboard-header"> <%# Introduce the editor workspace. %>
     <div class="eyebrow">EDITOR CONTROL ROOM</div>
     <h1>אזור עורך</h1>
     <p>שלום <%= user.displayName %>. כאן מנהלים את תור האישור ואת תוכן הכתבות.</p>
   </section>
 
-  <form class="filters-card editor-toolbar" id="editor-filters">
-    <label>
+  <form class="filters-card editor-toolbar" id="editor-filters"> <%# Collect search and status filters for the queue API. %>
+    <label> <%# Label the title search control. %>
       חיפוש לפי כותרת
       <input id="editor-search" name="search" type="search" placeholder="לדוגמה: חדשות היום">
     </label>
-    <label>
+    <label> <%# Label the workflow status filter. %>
       סינון לפי מצב
       <select id="editor-status-filter" name="status">
         <option value="">כל המצבים</option>
@@ -23,28 +23,28 @@
         <option value="changes_requested">הוחזרה לתיקונים</option>
       </select>
     </label>
-    <button class="button button-primary" type="submit">רענון רשימה</button>
+    <button class="button button-primary" type="submit">רענון רשימה</button> <%# Reload the filtered article queue. %>
   </form>
 
-  <p class="editor-message" id="editor-message" role="status" aria-live="polite"></p>
+  <p class="editor-message" id="editor-message" role="status" aria-live="polite"></p> <%# Announce save and workflow results to assistive technology. %>
 
-  <section class="editor-layout" aria-label="כלי ניהול כתבות">
-    <aside class="form-card editor-queue">
-      <div class="section-heading">
+  <section class="editor-layout" aria-label="כלי ניהול כתבות"> <%# Place the queue beside the selected article workspace. %>
+    <aside class="form-card editor-queue"> <%# Show the articles that the editor can review. %>
+      <div class="section-heading"> <%# Keep the queue title and count together. %>
         <div>
           <div class="eyebrow">ARTICLE QUEUE</div>
           <h2>כל הכתבות</h2>
         </div>
         <span class="status-pill" id="editor-total-count">0</span>
       </div>
-      <div class="editor-article-list" id="editor-article-list" aria-live="polite">
-        <p class="loading-indicator">טוען כתבות...</p>
+      <div class="editor-article-list" id="editor-article-list" aria-live="polite"> <%# Let JavaScript replace the loading state with queue items. %>
+        <p class="loading-indicator">טוען כתבות...</p> <%# Give the user feedback before the first API response. %>
       </div>
     </aside>
 
-    <section class="editor-workspace">
-      <div class="form-card" id="editor-form-card">
-        <div class="section-heading">
+    <section class="editor-workspace"> <%# Hold the form and version comparison for one selected article. %>
+      <div class="form-card" id="editor-form-card"> <%# Display editable fields and workflow actions. %>
+        <div class="section-heading"> <%# Show the selected title and current state. %>
           <div>
             <div class="eyebrow">SELECTED ARTICLE</div>
             <h2 id="editor-selected-title">בחרו כתבה</h2>
@@ -52,57 +52,57 @@
           <span class="status-pill" id="editor-selected-status">אין בחירה</span>
         </div>
 
-        <form class="editor-form" id="editor-form">
-          <label>
+        <form class="editor-form" id="editor-form"> <%# Send editor changes through JavaScript to the protected API. %>
+          <label> <%# Label the article title input. %>
             כותרת
             <input id="editor-title" name="title" type="text" maxlength="180" required>
           </label>
-          <label>
+          <label> <%# Label the article summary input. %>
             תקציר
             <textarea id="editor-summary" name="summary" maxlength="500" rows="3"></textarea>
           </label>
-          <label>
+          <label> <%# Label the full article content input. %>
             תוכן מלא
             <textarea id="editor-content" name="content" maxlength="20000" rows="12" required></textarea>
           </label>
-          <div class="editor-fields-row">
-            <label>
+          <div class="editor-fields-row"> <%# Place short metadata fields together on wide screens. %>
+            <label> <%# Label the category input. %>
               קטגוריה
               <input id="editor-category" name="category" type="text" maxlength="80" required>
             </label>
-            <label>
+            <label> <%# Label the image URL input. %>
               כתובת תמונה
               <input id="editor-image-url" name="imageUrl" type="url" maxlength="1000" placeholder="https://...">
             </label>
           </div>
-          <label>
+          <label> <%# Label the note used when returning an article for changes. %>
             הערת עורך להחזרה לתיקונים
             <textarea id="editor-request-note" name="note" maxlength="2000" rows="3" placeholder="כתבו מה הכתב צריך לתקן..."></textarea>
           </label>
 
-          <div class="editor-actions">
+          <div class="editor-actions"> <%# Group save, publish, correction, and delete actions. %>
             <button class="button button-secondary" id="editor-save" type="submit">שמירת עריכה</button>
             <button class="button button-primary" id="editor-publish" type="button">אישור ופרסום</button>
             <button class="button button-secondary" id="editor-request-changes" type="button">החזרה לתיקונים</button>
             <button class="button button-danger" id="editor-delete" type="button">מחיקת כתבה</button>
           </div>
-          <p class="form-note">שמירה אינה מפרסמת. רק כפתור האישור מחליף את הגרסה הציבורית.</p>
+          <p class="form-note">שמירה אינה מפרסמת. רק כפתור האישור מחליף את הגרסה הציבורית.</p> <%# Explain that saving is separate from publishing. %>
         </form>
       </div>
 
-      <section class="form-card editor-compare" aria-labelledby="editor-compare-title">
-        <div class="section-heading">
+      <section class="form-card editor-compare" aria-labelledby="editor-compare-title"> <%# Compare the public copy with the pending working copy. %>
+        <div class="section-heading"> <%# Label the version comparison area. %>
           <div>
             <div class="eyebrow">VERSION COMPARE</div>
             <h2 id="editor-compare-title">השוואת גרסאות</h2>
           </div>
         </div>
-        <div class="editor-compare-grid">
-          <article class="version-card">
+        <div class="editor-compare-grid"> <%# Place both versions side by side on wide screens. %>
+          <article class="version-card"> <%# Show the version currently visible to readers. %>
             <h3>הגרסה הציבורית</h3>
             <div id="editor-published-version"><p class="form-note">אין גרסה ציבורית.</p></div>
           </article>
-          <article class="version-card version-card-working">
+          <article class="version-card version-card-working"> <%# Show the version waiting for editor approval. %>
             <h3>הגרסה שממתינה לבדיקה</h3>
             <div id="editor-working-version"><p class="form-note">בחרו כתבה כדי לראות את הגרסה.</p></div>
           </article>
@@ -114,4 +114,4 @@
 
 <!-- Load editor actions after the page structure is ready. -->
 <script src="/js/editor.js" defer></script>
-<%- include("../partials/footer") %>
+<%- include("../partials/footer") %> <%# Close the shared HTML document. %>

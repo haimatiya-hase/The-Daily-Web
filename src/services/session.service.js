@@ -25,8 +25,15 @@ function readSessionToken(req) {
     const name = item.slice(0, separator).trim();
     // Select only the cookie configured for this application's sessions.
     if (name === config.sessionCookieName) {
-      // Decode escaped characters before returning the original random token.
-      return decodeURIComponent(item.slice(separator + 1).trim());
+      // Read the raw value before attempting to decode escaped characters.
+      const rawValue = item.slice(separator + 1).trim();
+      try {
+        // Decode escaped characters before returning the original random token.
+        return decodeURIComponent(rawValue);
+      } catch (error) {
+        // Ignore a malformed cookie instead of failing the whole request.
+        return null;
+      }
     }
   }
   // Treat requests without the session cookie as guest requests.
