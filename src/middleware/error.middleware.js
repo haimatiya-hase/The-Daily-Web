@@ -24,11 +24,16 @@ function errorHandler(error, req, res, next) {
   }
 
   // Do not expose internal details for unexpected server errors.
-  const statusCode = Number(error.statusCode) || 500;
+  const statusCode = Number(error.statusCode) || (error.name === "ValidationError" ? 400 : 500); // Treat invalid Mongoose input as a normal client error.
+  const safeMessage = error.name === "ValidationError" ? "הנתונים שנשלחו אינם תקינים." : statusCode === 500 ? "אירעה שגיאה בלתי צפויה. נסו שוב מאוחר יותר." : error.message; // Hide internal details while keeping expected messages useful.
+  if (req.originalUrl.startsWith("/api/")) { // Return JSON when browser JavaScript called an API route.
+    res.status(statusCode).json({ message: safeMessage }); // Send a simple error object that the frontend can display.
+    return; // Stop before rendering an HTML error page.
+  }
   res.status(statusCode).render("pages/error", {
     pageTitle: "שגיאה",
     statusCode,
-    message: statusCode === 500 ? "אירעה שגיאה בלתי צפויה. נסו שוב מאוחר יותר." : error.message
+    message: safeMessage
   });
 }
 

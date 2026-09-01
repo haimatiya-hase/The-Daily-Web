@@ -108,7 +108,8 @@ h2, h3 { line-height: 1.15; }
 .filters-card { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 14px; padding: 16px; margin-bottom: 18px; }
 label { display: grid; gap: 6px; color: var(--muted); font-size: 12px; font-weight: 700; }
 input, select { width: 100%; min-height: 42px; padding: 0 12px; border: 1px solid var(--line); color: var(--ink); background: #fbfcfb; font: inherit; }
-input:focus, select:focus { outline: 2px solid var(--soft-accent); border-color: var(--accent); }
+textarea { width: 100%; padding: 12px; border: 1px solid var(--line); color: var(--ink); background: #fbfcfb; font: inherit; line-height: 1.6; resize: vertical; } /* Keep long reporter text readable and resizable. */
+input:focus, select:focus, textarea:focus { outline: 2px solid var(--soft-accent); border-color: var(--accent); }
 
 .empty-state { padding: 46px 28px; text-align: center; }
 .empty-icon { display: grid; place-items: center; width: 42px; height: 42px; margin: 0 auto 18px; color: white; background: var(--accent); font-size: 26px; }
@@ -146,6 +147,38 @@ input:focus, select:focus { outline: 2px solid var(--soft-accent); border-color:
 .loading-indicator { padding: 20px; color: var(--muted); text-align: center; }
 code { padding: 2px 6px; background: var(--soft-accent); }
 
+.reporter-header { display: flex; align-items: end; justify-content: space-between; gap: 24px; } /* Keep the title and create button aligned. */
+.reporter-header .button { flex: 0 0 auto; margin-bottom: 8px; } /* Keep the create button at a stable size. */
+.form-message { min-height: 24px; margin: -14px 0 18px; color: var(--accent-dark); font-weight: 700; } /* Reserve space for dashboard feedback. */
+.reporter-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; } /* Show reporter articles in a simple two-column grid. */
+.reporter-card { display: grid; gap: 16px; padding: 24px; background: var(--card); border: 1px solid var(--line); box-shadow: var(--shadow); } /* Present one article as a clear dashboard card. */
+.reporter-card-top, .reporter-card-footer, .reporter-save-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; } /* Align related reporter controls. */
+.reporter-card h2 { margin: 0; font-size: 25px; } /* Keep card titles compact. */
+.reporter-summary { margin: 0; color: var(--muted); } /* Give article summaries a quieter visual style. */
+.reporter-card-footer { padding-top: 14px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; } /* Separate metadata from article content. */
+.reporter-card-footer .button { min-height: 38px; padding-inline: 16px; color: var(--ink); } /* Keep the card action easy to click. */
+.version-label { color: var(--muted); font-size: 12px; font-weight: 700; } /* Show version information without visual noise. */
+.status-draft { color: #4e5f75; background: #e7edf4; } /* Give editable drafts a neutral blue status. */
+.status-pending_review { color: #795e12; background: #fff2bf; } /* Give waiting articles a clear yellow status. */
+.status-published { color: #25653a; background: #ddf2e3; } /* Give published articles a clear green status. */
+.status-changes_requested { color: var(--accent-dark); background: var(--soft-accent); } /* Give returned articles a clear red status. */
+.editor-note { padding: 14px 16px; color: var(--accent-dark); background: var(--soft-accent); border-right: 4px solid var(--accent); } /* Highlight the editor's correction note. */
+.editor-note p { margin: 5px 0 0; } /* Keep the note text close to its label. */
+.editor-note-large { margin-bottom: 18px; } /* Separate a large note from the editor form. */
+.public-version-note { margin: 0; color: #25653a; font-size: 13px; font-weight: 700; } /* Confirm that readers still see the approved version. */
+.reporter-editor-shell { max-width: 920px; } /* Keep long form lines comfortable to read. */
+.back-link { display: inline-block; margin-bottom: 24px; color: var(--accent-dark); font-weight: 700; text-decoration: none; } /* Provide a clear return path to the dashboard. */
+.reporter-editor-heading { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 24px; } /* Align the article title and status. */
+.reporter-editor-heading h1 { margin-bottom: 0; font-size: clamp(34px, 5vw, 58px); } /* Size the editor title without overwhelming the form. */
+.published-safety-note { margin-bottom: 18px; padding: 14px 16px; color: #25653a; background: #ddf2e3; border-right: 4px solid #4b9a63; font-weight: 700; } /* Explain published-version protection. */
+.reporter-form { padding: 28px; background: var(--card); border: 1px solid var(--line); box-shadow: var(--shadow); } /* Place the article fields in one focused card. */
+.reporter-form fieldset { display: grid; gap: 20px; margin: 0; padding: 0; border: 0; } /* Keep the form layout simple and vertical. */
+.reporter-form fieldset:disabled { opacity: 0.72; } /* Make read-only review mode visually clear. */
+.reporter-form-row { display: grid; grid-template-columns: 1fr 1.4fr; gap: 16px; } /* Share one row between category and image fields. */
+.reporter-save-row { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--line); } /* Separate save controls from article fields. */
+.autosave-status { margin: 0; color: var(--muted); font-size: 13px; font-weight: 700; } /* Show autosave progress without distracting from writing. */
+.error-text { color: var(--accent-dark); } /* Highlight a save or submission error. */
+
 @media (max-width: 780px) {
   .container { width: min(100% - 28px, 1160px); }
   .header-inner { min-height: 68px; }
@@ -154,5 +187,9 @@ code { padding: 2px 6px; background: var(--soft-accent); }
   .content-grid { grid-template-columns: 1fr; gap: 24px; }
   .filters-card { grid-template-columns: 1fr; }
   .section-heading { align-items: start; flex-direction: column; }
+  .reporter-header, .reporter-editor-heading, .reporter-card-footer, .reporter-save-row { align-items: stretch; flex-direction: column; } /* Stack reporter actions on small screens. */
+  .reporter-grid, .reporter-form-row { grid-template-columns: 1fr; } /* Use one readable column on small screens. */
+  .reporter-header .button, .reporter-save-row .button { width: 100%; } /* Make important mobile actions easy to tap. */
+  .reporter-form { padding: 20px; } /* Preserve content width on small screens. */
   .footer-inner { align-items: flex-start; flex-direction: column; justify-content: center; gap: 0; }
 }

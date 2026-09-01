@@ -14,6 +14,7 @@ router.get("/", homeController.showHome);
 router.get("/articles/:articleId", articleController.showArticle);
 router.get("/login", authController.showLogin);
 router.get("/reporter", requireRole("reporter"), reporterController.showReporterDashboard);
+router.get("/reporter/articles/:articleId", requireRole("reporter"), reporterController.showReporterArticle); // Show one owned article in the reporter editor.
 router.get("/editor", requireRole("editor"), editorController.showEditorDashboard);
 
 module.exports = router;

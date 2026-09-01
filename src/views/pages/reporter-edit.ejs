@@ -1,0 +1,71 @@
+<%- include("../partials/head", { pageTitle }) %> <%# Start the shared HTML document. %>
+<%- include("../partials/header", { activePage }) %> <%# Show the shared site header. %>
+
+<main class="container page-shell reporter-editor-shell"> <%# Hold the reporter article editor. %>
+  <a class="back-link" href="/reporter">→ חזרה לכל הכתבות</a> <%# Return to the reporter dashboard. %>
+
+  <section class="reporter-editor-heading"> <%# Show the article state before the form. %>
+    <div> <%# Keep the heading and status text together. %>
+      <div class="eyebrow">ARTICLE DRAFT</div> <%# Label this page as the article workspace. %>
+      <h1><%= article.workingVersion.title || "כתבה חדשה" %></h1> <%# Show the current title or a new-draft label. %>
+    </div>
+    <span class="status-pill status-<%= article.status %>"><%= article.statusLabel %></span> <%# Show the current workflow status. %>
+  </section>
+
+  <% if (article.editorNote) { %> <%# Show the editor note when corrections were requested. %>
+    <aside class="editor-note editor-note-large" aria-label="הערת העורך"> <%# Highlight the correction request above the form. %>
+      <strong>הערת העורך</strong> <%# Label the correction message. %>
+      <p><%= article.editorNote %></p> <%# Escape and display the editor's note. %>
+    </aside>
+  <% } %>
+
+  <% if (article.hasPublishedVersion) { %> <%# Explain how editing a published article protects readers. %>
+    <aside class="published-safety-note">הגרסה המאושרת נשארת באתר הציבורי עד שהעורך יאשר את העדכון.</aside> <%# Confirm that the public version is unchanged. %>
+  <% } %>
+
+  <form class="reporter-form" id="reporter-article-form" data-article-id="<%= article.id %>" data-editable="<%= article.canEdit %>" novalidate> <%# Collect the working version fields for autosave. %>
+    <fieldset <%= article.canEdit ? "" : "disabled" %>> <%# Disable every field while the editor is reviewing the article. %>
+      <label> <%# Label the article title field. %>
+        כותרת
+        <input name="title" value="<%= article.workingVersion.title %>" maxlength="180" required> <%# Edit the article title. %>
+      </label>
+
+      <label> <%# Label the article summary field. %>
+        תקציר
+        <textarea name="summary" rows="3" maxlength="500" required><%= article.workingVersion.summary %></textarea> <%# Edit the short feed summary. %>
+      </label>
+
+      <div class="reporter-form-row"> <%# Place category and image fields side by side on wide screens. %>
+        <label> <%# Label the category selection. %>
+          קטגוריה
+          <select name="category" required> <%# Choose one course-approved news category. %>
+            <option value="">בחירת קטגוריה</option> <%# Keep an empty option for validation. %>
+            <% ["חדשות", "כלכלה", "תרבות", "ספורט", "טכנולוגיה"].forEach((category) => { %> <%# Render the simple fixed category list. %>
+              <option value="<%= category %>" <%= article.workingVersion.category === category ? "selected" : "" %>><%= category %></option> <%# Preserve the selected category after reload. %>
+            <% }); %>
+          </select>
+        </label>
+
+        <label> <%# Label the main image address. %>
+          כתובת תמונה
+          <input name="imageUrl" type="text" value="<%= article.workingVersion.imageUrl %>" maxlength="1000" required> <%# Edit the main image URL or local path. %>
+        </label>
+      </div>
+
+      <label> <%# Label the full article body. %>
+        תוכן הכתבה
+        <textarea name="content" rows="18" maxlength="30000" required><%= article.workingVersion.content %></textarea> <%# Edit the full plain-text article body. %>
+      </label>
+    </fieldset>
+
+    <div class="reporter-save-row"> <%# Show autosave feedback and the submission action. %>
+      <p class="autosave-status" id="autosave-status" role="status" aria-live="polite"><%= article.canEdit ? "כל שינוי נשמר אוטומטית." : "הכתבה ממתינה לאישור ולא ניתנת לעריכה." %></p> <%# Explain the current save state. %>
+      <% if (article.canEdit) { %> <%# Allow submission only in an editable workflow state. %>
+        <button class="button button-primary" id="submit-article-button" type="button">שליחה לאישור עורך</button> <%# Save and submit the working version. %>
+      <% } %>
+    </div>
+  </form>
+</main>
+
+<script src="/js/reporter.js" defer></script> <%# Load autosave and submission behavior. %>
+<%- include("../partials/footer") %> <%# Close the shared HTML document. %>

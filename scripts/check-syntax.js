@@ -4,7 +4,7 @@ const path = require("node:path");
 const { spawnSync } = require("node:child_process");
 
 // Check only project JavaScript folders.
-const roots = ["src", "public/js", "scripts"];
+const roots = ["src", "public/js", "scripts", "tests"]; // Include the small built-in test folder in syntax checks.
 const files = [];
 
 // Collect JavaScript files recursively.
@@ -20,7 +20,8 @@ function collect(directory) {
 }
 
 for (const root of roots) {
-  collect(path.resolve(process.cwd(), root));
+  const absoluteRoot = path.resolve(process.cwd(), root); // Build the full folder path once.
+  if (fs.existsSync(absoluteRoot)) collect(absoluteRoot); // Check optional folders only when they exist.
 }
 
 // Run Node's built-in syntax checker for each file.

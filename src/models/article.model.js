@@ -6,7 +6,7 @@ const articleSnapshotSchema = new mongoose.Schema({
   versionNumber: { type: Number, required: true, default: 1 },
   title: { type: String, trim: true, maxlength: 180 },
   summary: { type: String, trim: true, maxlength: 500 },
-  content: { type: String, trim: true },
+  content: { type: String, trim: true, maxlength: 30000 }, // Limit the body so autosave requests stay small and predictable.
   imageUrl: { type: String, trim: true, maxlength: 1000 },
   category: { type: String, trim: true, maxlength: 80 },
   createdAt: { type: Date },
