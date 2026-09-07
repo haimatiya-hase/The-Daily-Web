@@ -1,9 +1,88 @@
 // Find the controls that are available on the home page.
 (() => {
   const filters = document.querySelector("#feed-filters");
+  const feed = document.querySelector("#feed");
+  const loadingIndicator = document.querySelector("#feed-loading");
   const healthLink = document.querySelector('a[href="/api/health"]');
   // Find the area that displays weather on the home page.
   const weatherContent = document.querySelector("#weather-content");
+
+  // Format a valid publication date for Hebrew readers.
+  function formatPublishedDate(value) {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    return new Intl.DateTimeFormat("he-IL", { dateStyle: "medium" }).format(date);
+  }
+
+  // Build one safe article card without inserting API values as HTML.
+  function createArticleCard(article) {
+    const card = document.createElement("article");
+    card.className = "article-card";
+
+    if (article.imageUrl) {
+      const image = document.createElement("img");
+      image.className = "article-card-image";
+      image.src = article.imageUrl;
+      image.alt = "";
+      image.loading = "lazy";
+      card.append(image);
+    }
+
+    const content = document.createElement("div");
+    content.className = "article-card-content";
+    const category = document.createElement("div");
+    category.className = "eyebrow";
+    category.textContent = article.category || "חדשות";
+    const title = document.createElement("h3");
+    const link = document.createElement("a");
+    link.href = `/articles/${article.id}`;
+    link.textContent = article.title || "כתבה ללא כותרת";
+    title.append(link);
+    const summary = document.createElement("p");
+    summary.textContent = article.summary || "";
+    const meta = document.createElement("p");
+    meta.className = "article-card-meta";
+    meta.textContent = [article.authorName, formatPublishedDate(article.publishedAt)].filter(Boolean).join(" · ");
+    content.append(category, title, summary, meta);
+    card.append(content);
+    return card;
+  }
+
+  // Replace the feed with a friendly empty or error message.
+  function showFeedMessage(title, message) {
+    if (!feed) return;
+    const state = document.createElement("article");
+    state.className = "empty-state feed-empty";
+    const heading = document.createElement("h3");
+    heading.textContent = title;
+    const text = document.createElement("p");
+    text.textContent = message;
+    state.append(heading, text);
+    feed.replaceChildren(state);
+  }
+
+  // Request and display the first twenty public articles.
+  async function loadFeed() {
+    if (!feed || !loadingIndicator) return;
+
+    try {
+      const response = await fetch("/api/articles", { headers: { Accept: "application/json" } });
+      if (!response.ok) throw new Error("Feed request failed");
+      const data = await response.json();
+      const articles = Array.isArray(data.articles) ? data.articles : [];
+
+      if (articles.length === 0) {
+        showFeedMessage("עדיין אין כתבות שפורסמו", "כתבות שאושרו יופיעו כאן ברגע שיפורסמו.");
+        return;
+      }
+
+      feed.replaceChildren(...articles.map(createArticleCard));
+    } catch (error) {
+      showFeedMessage("לא הצלחנו לטעון את הכתבות", "אפשר לרענן את העמוד ולנסות שוב בעוד רגע.");
+    } finally {
+      loadingIndicator.hidden = true;
+    }
+  }
 
   // Convert standard weather codes into short Hebrew descriptions.
   function describeWeather(code) {
@@ -83,4 +162,6 @@
 
   // Load weather after the page controls are ready.
   loadWeather();
+  // Load the first public news cards beside the weather widget.
+  loadFeed();
 })();

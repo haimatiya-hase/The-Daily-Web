@@ -453,6 +453,33 @@ input:disabled, select:disabled, textarea:disabled { cursor: not-allowed; opacit
 /* Limit empty state text width. */
 .empty-state p { max-width: 540px; margin: 0 auto; color: var(--muted); }
 
+/* Stack public article cards with a clear reading rhythm. */
+.feed { display: grid; gap: 18px; }
+
+/* Present each public story as an image beside its approved text. */
+.article-card { display: grid; grid-template-columns: minmax(180px, 0.7fr) minmax(0, 1.3fr); overflow: hidden; border: 1px solid var(--line); border-radius: 18px; background: var(--card); box-shadow: var(--shadow); }
+
+/* Keep card images consistent when source images have different sizes. */
+.article-card-image { width: 100%; height: 100%; min-height: 220px; object-fit: cover; background: var(--paper-soft); }
+
+/* Give public story text enough space from the card edges. */
+.article-card-content { padding: 24px; }
+
+/* Keep story titles prominent but smaller than page headings. */
+.article-card h3 { margin: 8px 0 11px; font-size: 25px; }
+
+/* Keep title links clean inside the card. */
+.article-card h3 a { color: var(--ink); text-decoration: none; }
+
+/* Reveal the link interaction with the shared accent color. */
+.article-card h3 a:hover { color: var(--accent); }
+
+/* Use quieter text for summaries and publication details. */
+.article-card-content > p { margin: 0; color: var(--muted); }
+
+/* Separate author and publication date from the summary. */
+.article-card .article-card-meta { margin-top: 18px; font-size: 12px; }
+
 /* Give large error and placeholder pages a balanced vertical layout. */
 .large-empty { margin: 80px auto; padding: 80px 28px; }
 
@@ -830,6 +857,8 @@ code { padding: 3px 7px; border-radius: 6px; color: var(--accent); background: r
   .floating-card-bottom { left: -2%; }
   .content-grid { grid-template-columns: 1fr; gap: 24px; }
   .filters-card { grid-template-columns: 1fr; }
+  .article-card { grid-template-columns: 1fr; }
+  .article-card-image { min-height: 190px; max-height: 260px; }
   .editor-layout, .editor-compare-grid, .editor-fields-row { grid-template-columns: 1fr; }
   .section-heading { align-items: start; flex-direction: column; }
   .reporter-header, .reporter-editor-heading, .reporter-card-footer, .reporter-save-row { align-items: stretch; flex-direction: column; }
