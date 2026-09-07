@@ -5,12 +5,16 @@
   const loadingIndicator = document.querySelector("#feed-loading");
   const feedSentinel = document.querySelector("#feed-sentinel");
   const feedEnd = document.querySelector("#feed-end");
+  const searchInput = filters?.querySelector('input[name="search"]');
   const healthLink = document.querySelector('a[href="/api/health"]');
   // Find the area that displays weather on the home page.
   const weatherContent = document.querySelector("#weather-content");
   let nextPage = 1;
   let isFeedLoading = false;
   let hasMoreArticles = true;
+  let activeSearch = "";
+  let feedRequestVersion = 0;
+  let searchTimer;
 
   // Format a valid publication date for Hebrew readers.
   function formatPublishedDate(value) {
@@ -70,40 +74,65 @@
   async function loadFeed() {
     if (!feed || !loadingIndicator || isFeedLoading || !hasMoreArticles) return;
 
+    const requestVersion = ++feedRequestVersion;
+    const requestedPage = nextPage;
     isFeedLoading = true;
     loadingIndicator.textContent = "טוען כתבות...";
     loadingIndicator.hidden = false;
 
     try {
-      const response = await fetch(`/api/articles?page=${nextPage}`, { headers: { Accept: "application/json" } });
+      const parameters = new URLSearchParams({ page: String(requestedPage) });
+      if (activeSearch) parameters.set("search", activeSearch);
+      const response = await fetch(`/api/articles?${parameters}`, { headers: { Accept: "application/json" } });
       if (!response.ok) throw new Error("Feed request failed");
       const data = await response.json();
       const articles = Array.isArray(data.articles) ? data.articles : [];
 
-      if (nextPage === 1 && articles.length === 0) {
-        showFeedMessage("עדיין אין כתבות שפורסמו", "כתבות שאושרו יופיעו כאן ברגע שיפורסמו.");
+      // Ignore an older response after the visitor starts a newer search.
+      if (requestVersion !== feedRequestVersion) return;
+
+      if (requestedPage === 1 && articles.length === 0) {
+        const title = activeSearch ? "לא נמצאו כתבות מתאימות" : "עדיין אין כתבות שפורסמו";
+        const message = activeSearch ? "אפשר לנסות מילות חיפוש אחרות." : "כתבות שאושרו יופיעו כאן ברגע שיפורסמו.";
+        showFeedMessage(title, message);
         hasMoreArticles = false;
         return;
       }
 
       feed.append(...articles.map(createArticleCard));
       hasMoreArticles = data.pagination?.hasMore === true;
-      nextPage += 1;
+      nextPage = requestedPage + 1;
 
       if (!hasMoreArticles && feedEnd) {
         feedEnd.hidden = false;
       }
     } catch (error) {
-      if (nextPage === 1) {
+      if (requestVersion !== feedRequestVersion) return;
+      if (requestedPage === 1) {
         showFeedMessage("לא הצלחנו לטעון את הכתבות", "אפשר לרענן את העמוד ולנסות שוב בעוד רגע.");
         hasMoreArticles = false;
       } else {
         loadingIndicator.textContent = "לא הצלחנו לטעון כתבות נוספות. אפשר לגלול ולנסות שוב.";
       }
     } finally {
-      isFeedLoading = false;
-      if (loadingIndicator.textContent === "טוען כתבות...") loadingIndicator.hidden = true;
+      if (requestVersion === feedRequestVersion) {
+        isFeedLoading = false;
+        if (loadingIndicator.textContent === "טוען כתבות...") loadingIndicator.hidden = true;
+      }
     }
+  }
+
+  // Clear old cards and restart pagination for a new search term.
+  function resetFeedForSearch() {
+    if (!feed) return;
+    feedRequestVersion += 1;
+    isFeedLoading = false;
+    activeSearch = searchInput?.value.trim() || "";
+    nextPage = 1;
+    hasMoreArticles = true;
+    feed.replaceChildren();
+    if (feedEnd) feedEnd.hidden = true;
+    loadFeed();
   }
 
   // Watch the end of the feed and request another page when it approaches.
@@ -174,9 +203,17 @@
     }
   }
 
-  // Prevent a full page reload until the feed API is connected.
+  // Search through AJAX without reloading the page.
   filters?.addEventListener("submit", (event) => {
     event.preventDefault();
+    clearTimeout(searchTimer);
+    resetFeedForSearch();
+  });
+
+  // Wait briefly while the visitor types before starting a new search.
+  searchInput?.addEventListener("input", () => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(resetFeedForSearch, 350);
   });
 
   // Check the server asynchronously from the browser.

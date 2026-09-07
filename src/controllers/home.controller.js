@@ -22,12 +22,18 @@ async function getPublicFeed(req, res, next) {
     const pageValue = String(req.query?.page || "1");
     const requestedPage = Number(pageValue);
     const page = /^\d+$/.test(pageValue) && Number.isSafeInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1;
-
-    // Read only published articles and only the public fields needed by cards.
-    const articles = await Article.find({
+    // Keep the public search short and ignore surrounding spaces.
+    const search = String(req.query?.search || "").trim().slice(0, 100);
+    const filter = {
       status: "published",
       publishedVersion: { $ne: null }
-    })
+    };
+
+    // Use the existing MongoDB text index only when the visitor entered a term.
+    if (search) filter.$text = { $search: search };
+
+    // Read only published articles and only the public fields needed by cards.
+    const articles = await Article.find(filter)
       .select("author viewCount publishedVersion.title publishedVersion.summary publishedVersion.imageUrl publishedVersion.category publishedVersion.publishedAt")
       .populate("author", "displayName")
       .sort({ "publishedVersion.publishedAt": -1, _id: -1 })
@@ -53,7 +59,8 @@ async function getPublicFeed(req, res, next) {
 
     res.json({
       articles: publicArticles,
-      pagination: { page, pageSize: FEED_PAGE_SIZE, hasMore }
+      pagination: { page, pageSize: FEED_PAGE_SIZE, hasMore },
+      search
     });
   } catch (error) {
     // Let the shared API error handler return a safe JSON response.

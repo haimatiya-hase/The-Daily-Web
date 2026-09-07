@@ -73,6 +73,28 @@ test("public feed skips earlier results and stops after the final page", async (
   assert.equal(res.body.articles[0].authorName, "מערכת The Daily Web"); // Confirm a missing author uses the public fallback name.
 });
 
+test("public feed searches only approved article text through the MongoDB index", async (context) => { // Verify AJAX search uses the public text index.
+  const originalFind = Article.find; // Keep the real database method for other tests.
+  context.after(() => { Article.find = originalFind; }); // Restore the real method when this test ends.
+  let capturedFilter = null; // Store the filter passed to MongoDB.
+  const query = { // Simulate an empty search result query.
+    select() { return this; }, // Keep the selected field step chainable.
+    populate() { return this; }, // Keep the author population step chainable.
+    sort() { return this; }, // Keep the ordering step chainable.
+    skip() { return this; }, // Keep the page offset step chainable.
+    limit() { return this; }, // Keep the look-ahead limit step chainable.
+    async lean() { return []; } // Return no matching approved articles.
+  };
+  Article.find = (filter) => { capturedFilter = filter; return query; }; // Capture the real controller filter without contacting MongoDB.
+  const res = createResponse(); // Create the response collector.
+
+  await getPublicFeed({ query: { search: "  חדשות מקומיות  " } }, res, () => {}); // Search with surrounding spaces like normal user input.
+
+  assert.deepEqual(capturedFilter, { status: "published", publishedVersion: { $ne: null }, $text: { $search: "חדשות מקומיות" } }); // Confirm the search stays inside the published-only query.
+  assert.equal(res.body.search, "חדשות מקומיות"); // Confirm the normalized term is returned for predictable AJAX behavior.
+  assert.equal(res.body.articles.length, 0); // Confirm an empty search result remains a successful response.
+});
+
 test("public feed forwards database failures to the shared API handler", async (context) => { // Verify normal Express error handling.
   const originalFind = Article.find; // Keep the real database method for other tests.
   context.after(() => { Article.find = originalFind; }); // Restore the real method when this test ends.

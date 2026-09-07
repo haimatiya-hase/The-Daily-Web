@@ -50,7 +50,7 @@
       <form class="filters-card" id="feed-filters" novalidate>
         <label>
           חיפוש
-          <input type="search" name="search" placeholder="חיפוש לפי כותרת..." autocomplete="off">
+          <input type="search" name="search" placeholder="חיפוש בכותרת ובתקציר..." maxlength="100" autocomplete="off">
         </label>
         <label>
           קטגוריה
@@ -68,6 +68,7 @@
             <option value="popularity">הפופולריות ביותר</option>
           </select>
         </label>
+        <button class="button button-secondary feed-search-button" type="submit">חיפוש</button>
       </form>
 
       <div class="feed" id="feed" aria-live="polite"></div>
