@@ -380,7 +380,7 @@ h2, h3 { line-height: 1.15; }
 }
 
 /* Arrange feed controls in one compact toolbar. */
-.filters-card { display: grid; grid-template-columns: 1.4fr 1fr 1fr auto; gap: 14px; padding: 18px; margin-bottom: 18px; }
+.filters-card { display: grid; grid-template-columns: minmax(180px, 1.4fr) repeat(3, minmax(120px, 1fr)) auto; gap: 14px; padding: 18px; margin-bottom: 18px; }
 
 /* Align the feed search action with the form controls. */
 .feed-search-button { align-self: end; }
@@ -841,11 +841,18 @@ code { padding: 3px 7px; border-radius: 6px; color: var(--accent); background: r
 /* Preserve line breaks in long version values. */
 .version-card p, .version-card pre { margin: 3px 0 0; color: var(--muted-strong); font: inherit; white-space: pre-wrap; overflow-wrap: anywhere; }
 
+/* Split the larger feed toolbar into two comfortable rows on narrower screens. */
+@media (max-width: 1100px) {
+  .filters-card { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .feed-search-button { grid-column: 1 / -1; }
+}
+
 /* Reflow complex screens for tablets and phones. */
 @media (max-width: 900px) {
   .hero-layout, .auth-shell { grid-template-columns: 1fr; gap: 42px; }
   .hero-visual { max-width: 620px; width: 100%; margin: 0 auto; }
   .header-signal { display: none; }
+  .filters-card { grid-template-columns: 1fr; }
 }
 
 /* Keep all forms and cards usable on small screens. */

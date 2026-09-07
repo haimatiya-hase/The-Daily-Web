@@ -6,6 +6,8 @@
   const feedSentinel = document.querySelector("#feed-sentinel");
   const feedEnd = document.querySelector("#feed-end");
   const searchInput = filters?.querySelector('input[name="search"]');
+  const categorySelect = filters?.querySelector('select[name="category"]');
+  const viewStatusSelect = filters?.querySelector('select[name="viewStatus"]');
   const healthLink = document.querySelector('a[href="/api/health"]');
   // Find the area that displays weather on the home page.
   const weatherContent = document.querySelector("#weather-content");
@@ -13,8 +15,28 @@
   let isFeedLoading = false;
   let hasMoreArticles = true;
   let activeSearch = "";
+  let activeCategory = "";
+  let activeViewStatus = "";
   let feedRequestVersion = 0;
   let searchTimer;
+
+  // Reuse one anonymous browser key so view filters can match saved events.
+  function getClientKey() {
+    const storageKey = "dailyWebClientKey";
+
+    try {
+      let value = localStorage.getItem(storageKey);
+      if (!value) {
+        value = window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`;
+        localStorage.setItem(storageKey, value);
+      }
+      return value;
+    } catch (error) {
+      return "";
+    }
+  }
+
+  const clientKey = getClientKey();
 
   // Format a valid publication date for Hebrew readers.
   function formatPublishedDate(value) {
@@ -83,7 +105,11 @@
     try {
       const parameters = new URLSearchParams({ page: String(requestedPage) });
       if (activeSearch) parameters.set("search", activeSearch);
-      const response = await fetch(`/api/articles?${parameters}`, { headers: { Accept: "application/json" } });
+      if (activeCategory) parameters.set("category", activeCategory);
+      if (activeViewStatus) parameters.set("viewStatus", activeViewStatus);
+      const headers = { Accept: "application/json" };
+      if (clientKey) headers["X-Client-Key"] = clientKey;
+      const response = await fetch(`/api/articles?${parameters}`, { headers });
       if (!response.ok) throw new Error("Feed request failed");
       const data = await response.json();
       const articles = Array.isArray(data.articles) ? data.articles : [];
@@ -92,8 +118,9 @@
       if (requestVersion !== feedRequestVersion) return;
 
       if (requestedPage === 1 && articles.length === 0) {
-        const title = activeSearch ? "לא נמצאו כתבות מתאימות" : "עדיין אין כתבות שפורסמו";
-        const message = activeSearch ? "אפשר לנסות מילות חיפוש אחרות." : "כתבות שאושרו יופיעו כאן ברגע שיפורסמו.";
+        const hasActiveFilter = activeSearch || activeCategory || activeViewStatus;
+        const title = hasActiveFilter ? "לא נמצאו כתבות מתאימות" : "עדיין אין כתבות שפורסמו";
+        const message = hasActiveFilter ? "אפשר לשנות את החיפוש או את הסינון." : "כתבות שאושרו יופיעו כאן ברגע שיפורסמו.";
         showFeedMessage(title, message);
         hasMoreArticles = false;
         return;
@@ -122,12 +149,14 @@
     }
   }
 
-  // Clear old cards and restart pagination for a new search term.
-  function resetFeedForSearch() {
+  // Clear old cards and restart pagination for the selected feed controls.
+  function resetFeed() {
     if (!feed) return;
     feedRequestVersion += 1;
     isFeedLoading = false;
     activeSearch = searchInput?.value.trim() || "";
+    activeCategory = categorySelect?.value || "";
+    activeViewStatus = viewStatusSelect?.value || "";
     nextPage = 1;
     hasMoreArticles = true;
     feed.replaceChildren();
@@ -207,13 +236,20 @@
   filters?.addEventListener("submit", (event) => {
     event.preventDefault();
     clearTimeout(searchTimer);
-    resetFeedForSearch();
+    resetFeed();
   });
 
   // Wait briefly while the visitor types before starting a new search.
   searchInput?.addEventListener("input", () => {
     clearTimeout(searchTimer);
-    searchTimer = setTimeout(resetFeedForSearch, 350);
+    searchTimer = setTimeout(resetFeed, 350);
+  });
+
+  // Apply category and view filters immediately without refreshing the page.
+  filters?.addEventListener("change", (event) => {
+    if (!event.target.matches('select[name="category"], select[name="viewStatus"]')) return;
+    clearTimeout(searchTimer);
+    resetFeed();
   });
 
   // Check the server asynchronously from the browser.

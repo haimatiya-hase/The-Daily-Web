@@ -1,8 +1,11 @@
 // Load the article model used by the public feed.
 const Article = require("../models/article.model");
+const ViewEvent = require("../models/view-event.model");
+const { hashClientKey } = require("../utils/client-key");
 
 // Keep every feed request at the assignment limit of twenty articles.
 const FEED_PAGE_SIZE = 20;
+const FEED_CATEGORIES = ["חדשות", "כלכלה", "תרבות", "ספורט", "טכנולוגיה"];
 
 // Render the public news feed shell.
 function showHome(req, res) {
@@ -24,6 +27,11 @@ async function getPublicFeed(req, res, next) {
     const page = /^\d+$/.test(pageValue) && Number.isSafeInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1;
     // Keep the public search short and ignore surrounding spaces.
     const search = String(req.query?.search || "").trim().slice(0, 100);
+    const requestedCategory = String(req.query?.category || "").trim();
+    const category = FEED_CATEGORIES.includes(requestedCategory) ? requestedCategory : "";
+    const requestedViewStatus = String(req.query?.viewStatus || "").trim();
+    const viewStatus = ["viewed", "unviewed"].includes(requestedViewStatus) ? requestedViewStatus : "";
+    const clientKey = String(req.get?.("X-Client-Key") || "").trim().slice(0, 100);
     const filter = {
       status: "published",
       publishedVersion: { $ne: null }
@@ -31,6 +39,17 @@ async function getPublicFeed(req, res, next) {
 
     // Use the existing MongoDB text index only when the visitor entered a term.
     if (search) filter.$text = { $search: search };
+    if (category) filter["publishedVersion.category"] = category;
+
+    // Match articles against this anonymous visitor's stored view events.
+    if (viewStatus) {
+      const viewedArticleIds = clientKey
+        ? await ViewEvent.distinct("article", { clientKeyHash: hashClientKey(clientKey) })
+        : [];
+      filter._id = viewStatus === "viewed"
+        ? { $in: viewedArticleIds }
+        : { $nin: viewedArticleIds };
+    }
 
     // Read only published articles and only the public fields needed by cards.
     const articles = await Article.find(filter)
@@ -60,7 +79,8 @@ async function getPublicFeed(req, res, next) {
     res.json({
       articles: publicArticles,
       pagination: { page, pageSize: FEED_PAGE_SIZE, hasMore },
-      search
+      search,
+      filters: { category, viewStatus }
     });
   } catch (error) {
     // Let the shared API error handler return a safe JSON response.

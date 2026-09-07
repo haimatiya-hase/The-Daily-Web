@@ -1,6 +1,8 @@
 const test = require("node:test"); // Load Node's built-in test runner.
 const assert = require("node:assert/strict"); // Load strict assertions for exact feed checks.
 const Article = require("../src/models/article.model"); // Load the shared model so its query can be replaced safely.
+const ViewEvent = require("../src/models/view-event.model"); // Load view events so visitor filters can be tested without MongoDB.
+const { hashClientKey } = require("../src/utils/client-key"); // Hash the test visitor like the real controller.
 const { getPublicFeed } = require("../src/controllers/home.controller"); // Load the public feed action under test.
 
 function createResponse() { // Build the small part of an Express response used by this controller.
@@ -93,6 +95,57 @@ test("public feed searches only approved article text through the MongoDB index"
   assert.deepEqual(capturedFilter, { status: "published", publishedVersion: { $ne: null }, $text: { $search: "חדשות מקומיות" } }); // Confirm the search stays inside the published-only query.
   assert.equal(res.body.search, "חדשות מקומיות"); // Confirm the normalized term is returned for predictable AJAX behavior.
   assert.equal(res.body.articles.length, 0); // Confirm an empty search result remains a successful response.
+});
+
+test("public feed combines category and viewed filters for one anonymous visitor", async (context) => { // Verify both filters stay inside the public MongoDB query.
+  const originalFind = Article.find; // Keep the real article query for later tests.
+  const originalDistinct = ViewEvent.distinct; // Keep the real view event query for later tests.
+  context.after(() => { Article.find = originalFind; ViewEvent.distinct = originalDistinct; }); // Restore both database methods.
+  const calls = {}; // Record the two MongoDB filters used by the controller.
+  const viewedIds = ["article-2", "article-8"]; // Simulate articles already opened by this visitor.
+  ViewEvent.distinct = async (field, filter) => { calls.distinct = { field, filter }; return viewedIds; }; // Return only this visitor's viewed article IDs.
+  const query = { // Simulate a valid empty article page.
+    select() { return this; }, // Keep the selected field step chainable.
+    populate() { return this; }, // Keep the author population step chainable.
+    sort() { return this; }, // Keep the ordering step chainable.
+    skip() { return this; }, // Keep the page offset step chainable.
+    limit() { return this; }, // Keep the look-ahead limit step chainable.
+    async lean() { return []; } // Return no cards because only the query is under test.
+  };
+  Article.find = (filter) => { calls.articleFilter = filter; return query; }; // Capture the combined public article filter.
+  const res = createResponse(); // Create the response collector.
+  const req = { // Simulate the AJAX request created by the home page.
+    query: { category: "תרבות", viewStatus: "viewed" }, // Select one approved category and viewed articles.
+    get(name) { return name === "X-Client-Key" ? "browser-123" : ""; } // Send the stable anonymous browser key.
+  };
+
+  await getPublicFeed(req, res, () => {}); // Run the combined filters through the real controller.
+
+  assert.deepEqual(calls.distinct, { field: "article", filter: { clientKeyHash: hashClientKey("browser-123") } }); // Confirm raw visitor keys never enter MongoDB.
+  assert.deepEqual(calls.articleFilter, { status: "published", publishedVersion: { $ne: null }, "publishedVersion.category": "תרבות", _id: { $in: viewedIds } }); // Confirm the query requires approved, matching, viewed articles.
+  assert.deepEqual(res.body.filters, { category: "תרבות", viewStatus: "viewed" }); // Confirm AJAX receives the normalized active filters.
+});
+
+test("public feed excludes viewed articles when unviewed is selected", async (context) => { // Verify the opposite view-state filter.
+  const originalFind = Article.find; // Keep the real article query for later tests.
+  const originalDistinct = ViewEvent.distinct; // Keep the real view event query for later tests.
+  context.after(() => { Article.find = originalFind; ViewEvent.distinct = originalDistinct; }); // Restore both database methods.
+  let capturedFilter = null; // Store the final article filter.
+  ViewEvent.distinct = async () => ["article-3"]; // Simulate one article already viewed by this browser.
+  const query = { // Simulate a valid empty article page.
+    select() { return this; }, // Keep the selected field step chainable.
+    populate() { return this; }, // Keep the author population step chainable.
+    sort() { return this; }, // Keep the ordering step chainable.
+    skip() { return this; }, // Keep the page offset step chainable.
+    limit() { return this; }, // Keep the look-ahead limit step chainable.
+    async lean() { return []; } // Return no cards because only the filter is under test.
+  };
+  Article.find = (filter) => { capturedFilter = filter; return query; }; // Capture the unviewed query.
+  const req = { query: { viewStatus: "unviewed" }, get() { return "browser-456"; } }; // Send the unviewed choice and visitor key.
+
+  await getPublicFeed(req, createResponse(), () => {}); // Run the unviewed filter through the real controller.
+
+  assert.deepEqual(capturedFilter._id, { $nin: ["article-3"] }); // Confirm viewed IDs are removed from the public feed.
 });
 
 test("public feed forwards database failures to the shared API handler", async (context) => { // Verify normal Express error handling.
