@@ -44,7 +44,7 @@
           <div class="eyebrow">LATEST STORIES</div>
           <h2>כתבות אחרונות</h2>
         </div>
-        <span class="status-pill status-live"><i></i> עד 20 כתבות</span>
+        <span class="status-pill status-live"><i></i><span id="feed-count">טוען כתבות...</span></span>
       </div>
 
       <form class="filters-card" id="feed-filters" novalidate>
@@ -78,11 +78,18 @@
             <option value="popularity">הפופולריות ביותר</option>
           </select>
         </label>
-        <button class="button button-secondary feed-search-button" type="submit">חיפוש</button>
+        <div class="feed-filter-actions">
+          <button class="button button-primary" type="submit">חיפוש</button>
+          <button class="button button-secondary" id="feed-clear" type="button">ניקוי</button>
+        </div>
       </form>
 
-      <div class="feed" id="feed" aria-live="polite"></div>
+      <div class="feed" id="feed" aria-live="polite" aria-busy="true"></div>
       <div class="loading-indicator" id="feed-loading" role="status">טוען כתבות...</div>
+      <div class="feed-retry" id="feed-retry" role="status" aria-live="polite" hidden>
+        <span id="feed-retry-message">לא הצלחנו לטעון את הכתבות.</span>
+        <button class="button button-secondary" id="feed-retry-button" type="button">נסו שוב</button>
+      </div>
       <div class="feed-sentinel" id="feed-sentinel" aria-hidden="true"></div>
       <p class="feed-end" id="feed-end" hidden>הגעתם לסוף הפיד.</p>
     </div>

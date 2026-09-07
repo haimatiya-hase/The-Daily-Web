@@ -29,12 +29,12 @@ JavaScript with AJAX. No frontend framework is required.
 | Reporter workspace | Drafts, autosave, submission, editor feedback | ✅ |
 | Editor control room | Search, review, edit, publish, request changes, delete | ✅ |
 | Weather widget | Server-side weather request with a 15-minute cache | ✅ |
-| Public home feed | Published articles, search, filters, sort, infinite scroll | 🚧 |
+| Public home feed | Published articles, search, filters, sort, infinite scroll | ✅ |
 | Article experience | Full article page, comments, view events, Impact Analytics | 🚧 |
 
-> **Current checkpoint:** the shared authentication, Reporter, Editor, and
-> weather foundations are integrated. The public feed and article analytics
-> areas are being completed in the remaining team branches.
+> **Current checkpoint:** authentication, Reporter, Editor, weather, and the
+> public home feed are implemented. The public article, comments, and analytics
+> area remains in its team branch.
 
 ## Editorial workflow
 
@@ -113,10 +113,18 @@ an updated article is being reviewed.
 - Publish only after explicit editor approval.
 - Return an article to the reporter with a required correction note.
 
-### Public experience foundation
+### Public home feed
 
 - Responsive newsroom interface with a dark, futuristic visual language.
+- Only approved `publishedVersion` content reaches public article cards.
+- Search, category, viewed status, and sorting update through AJAX.
+- Infinite scroll loads twenty articles at a time with cursor pagination.
+- Compound MongoDB indexes support date and popularity queries.
+- Empty, loading, final-page, and retry states remain usable without a reload.
 - Weather widget connected through a small server-side API response.
+
+### Public article foundation
+
 - Article and comment models prepared for the public reading experience.
 - View-event model and analytics service prepared for Impact Analytics.
 
@@ -272,6 +280,7 @@ tests that were run, and a screenshot when the change affects the UI.
 - [Team division](docs/team-division.md)
 - [Editor area walkthrough](docs/editor-area-walkthrough.md)
 - [Authentication and weather walkthrough](docs/liri-auth-weather-walkthrough.md)
+- [Home feed walkthrough](docs/home-feed-walkthrough.md)
 - [Code walkthrough](docs/code-walkthrough.md)
 - [Original project requirements](docs/project-requirements.pdf)
 - [Updated project division](docs/project-division-updated.docx)

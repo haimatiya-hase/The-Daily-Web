@@ -382,8 +382,8 @@ h2, h3 { line-height: 1.15; }
 /* Arrange feed controls in one compact toolbar. */
 .filters-card { display: grid; grid-template-columns: minmax(180px, 1.4fr) repeat(3, minmax(120px, 1fr)) auto; gap: 14px; padding: 18px; margin-bottom: 18px; }
 
-/* Align the feed search action with the form controls. */
-.feed-search-button { align-self: end; }
+/* Keep the feed actions aligned with the form controls. */
+.feed-filter-actions { display: grid; grid-template-columns: 1fr 1fr; align-self: end; gap: 8px; }
 
 /* Make form labels clear without competing with values. */
 label { display: grid; gap: 7px; color: var(--muted); font-size: 11px; font-weight: 800; }
@@ -438,6 +438,9 @@ input:disabled, select:disabled, textarea:disabled { cursor: not-allowed; opacit
 /* Highlight secondary actions on hover. */
 .button-secondary:hover { border-color: var(--line-strong); color: var(--accent); background: rgba(96, 245, 210, 0.08); transform: translateY(-2px); }
 
+/* Keep a loading action visibly unavailable. */
+.button:disabled { cursor: wait; opacity: 0.55; transform: none; }
+
 /* Keep the feed empty state intentional instead of looking unfinished. */
 .empty-state { padding: 46px 28px; text-align: center; }
 
@@ -461,6 +464,9 @@ input:disabled, select:disabled, textarea:disabled { cursor: not-allowed; opacit
 
 /* Present each public story as an image beside its approved text. */
 .article-card { display: grid; grid-template-columns: minmax(180px, 0.7fr) minmax(0, 1.3fr); overflow: hidden; border: 1px solid var(--line); border-radius: 18px; background: var(--card); box-shadow: var(--shadow); }
+
+/* Let article text use the full card when the approved version has no image. */
+.article-card-no-image { grid-template-columns: 1fr; }
 
 /* Keep card images consistent when source images have different sizes. */
 .article-card-image { width: 100%; height: 100%; min-height: 220px; object-fit: cover; background: var(--paper-soft); }
@@ -488,6 +494,10 @@ input:disabled, select:disabled, textarea:disabled { cursor: not-allowed; opacit
 
 /* Confirm clearly when the visitor reaches the final article. */
 .feed-end { margin: 12px 0 0; color: var(--muted); font-size: 12px; text-align: center; }
+
+/* Keep retry feedback and its action together below the feed. */
+.feed-retry { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 14px; color: var(--muted); font-size: 13px; }
+.feed-retry[hidden] { display: none; }
 
 /* Give large error and placeholder pages a balanced vertical layout. */
 .large-empty { margin: 80px auto; padding: 80px 28px; }
@@ -844,7 +854,7 @@ code { padding: 3px 7px; border-radius: 6px; color: var(--accent); background: r
 /* Split the larger feed toolbar into two comfortable rows on narrower screens. */
 @media (max-width: 1100px) {
   .filters-card { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .feed-search-button { grid-column: 1 / -1; }
+  .feed-filter-actions { grid-column: 1 / -1; }
 }
 
 /* Reflow complex screens for tablets and phones. */
@@ -873,6 +883,7 @@ code { padding: 3px 7px; border-radius: 6px; color: var(--accent); background: r
   .floating-card-bottom { left: -2%; }
   .content-grid { grid-template-columns: 1fr; gap: 24px; }
   .filters-card { grid-template-columns: 1fr; }
+  .feed-filter-actions { grid-template-columns: 1fr; }
   .article-card { grid-template-columns: 1fr; }
   .article-card-image { min-height: 190px; max-height: 260px; }
   .editor-layout, .editor-compare-grid, .editor-fields-row { grid-template-columns: 1fr; }

@@ -5,6 +5,11 @@
   const loadingIndicator = document.querySelector("#feed-loading");
   const feedSentinel = document.querySelector("#feed-sentinel");
   const feedEnd = document.querySelector("#feed-end");
+  const feedCount = document.querySelector("#feed-count");
+  const retryPanel = document.querySelector("#feed-retry");
+  const retryMessage = document.querySelector("#feed-retry-message");
+  const retryButton = document.querySelector("#feed-retry-button");
+  const clearFiltersButton = document.querySelector("#feed-clear");
   const searchInput = filters?.querySelector('input[name="search"]');
   const categorySelect = filters?.querySelector('select[name="category"]');
   const viewStatusSelect = filters?.querySelector('select[name="viewStatus"]');
@@ -19,6 +24,7 @@
   let activeCategory = "";
   let activeViewStatus = "";
   let activeSort = "publishedAt";
+  let loadedArticleCount = 0;
   let feedRequestVersion = 0;
   let searchTimer;
 
@@ -59,6 +65,8 @@
       image.alt = "";
       image.loading = "lazy";
       card.append(image);
+    } else {
+      card.classList.add("article-card-no-image");
     }
 
     const content = document.createElement("div");
@@ -75,7 +83,8 @@
     summary.textContent = article.summary || "";
     const meta = document.createElement("p");
     meta.className = "article-card-meta";
-    meta.textContent = [article.authorName, formatPublishedDate(article.publishedAt)].filter(Boolean).join(" · ");
+    const viewCount = Number.isFinite(Number(article.viewCount)) ? Number(article.viewCount) : 0;
+    meta.textContent = [article.authorName, formatPublishedDate(article.publishedAt), `${viewCount} צפיות`].filter(Boolean).join(" · ");
     content.append(category, title, summary, meta);
     card.append(content);
     return card;
@@ -94,6 +103,22 @@
     feed.replaceChildren(state);
   }
 
+  // Update the small heading badge with the number of cards currently shown.
+  function updateFeedCount(message) {
+    if (feedCount) feedCount.textContent = message || `${loadedArticleCount} כתבות נטענו`;
+  }
+
+  // Show a manual recovery action after a failed feed request.
+  function showFeedRetry(message) {
+    if (retryMessage) retryMessage.textContent = message;
+    if (retryPanel) retryPanel.hidden = false;
+  }
+
+  // Hide old error feedback before a new request begins.
+  function hideFeedRetry() {
+    if (retryPanel) retryPanel.hidden = true;
+  }
+
   // Request and append the next twenty public articles.
   async function loadFeed() {
     if (!feed || !loadingIndicator || isFeedLoading || !hasMoreArticles) return;
@@ -101,6 +126,9 @@
     const requestVersion = ++feedRequestVersion;
     const requestedCursor = nextCursor;
     isFeedLoading = true;
+    feed.setAttribute("aria-busy", "true");
+    if (retryButton) retryButton.disabled = true;
+    hideFeedRetry();
     loadingIndicator.textContent = "טוען כתבות...";
     loadingIndicator.hidden = false;
 
@@ -127,12 +155,17 @@
         const message = hasActiveFilter ? "אפשר לשנות את החיפוש או את הסינון." : "כתבות שאושרו יופיעו כאן ברגע שיפורסמו.";
         showFeedMessage(title, message);
         hasMoreArticles = false;
+        updateFeedCount("אין תוצאות");
         return;
       }
 
+      // Remove a first-page error message before a successful retry adds cards.
+      if (!requestedCursor) feed.replaceChildren();
       feed.append(...articles.map(createArticleCard));
-      hasMoreArticles = data.pagination?.hasMore === true;
+      loadedArticleCount += articles.length;
+      updateFeedCount();
       nextCursor = data.pagination?.nextCursor || null;
+      hasMoreArticles = data.pagination?.hasMore === true && Boolean(nextCursor);
 
       if (!hasMoreArticles && feedEnd) {
         feedEnd.hidden = false;
@@ -140,14 +173,18 @@
     } catch (error) {
       if (requestVersion !== feedRequestVersion) return;
       if (!requestedCursor) {
-        showFeedMessage("לא הצלחנו לטעון את הכתבות", "אפשר לרענן את העמוד ולנסות שוב בעוד רגע.");
-        hasMoreArticles = false;
+        showFeedMessage("לא הצלחנו לטעון את הכתבות", "אפשר לנסות שוב בעוד רגע.");
+        updateFeedCount("הטעינה נכשלה");
+        showFeedRetry("לא הצלחנו לטעון את הפיד.");
       } else {
-        loadingIndicator.textContent = "לא הצלחנו לטעון כתבות נוספות. אפשר לגלול ולנסות שוב.";
+        showFeedRetry("לא הצלחנו לטעון כתבות נוספות.");
       }
+      hasMoreArticles = false;
     } finally {
       if (requestVersion === feedRequestVersion) {
         isFeedLoading = false;
+        feed.setAttribute("aria-busy", "false");
+        if (retryButton) retryButton.disabled = false;
         if (loadingIndicator.textContent === "טוען כתבות...") loadingIndicator.hidden = true;
       }
     }
@@ -162,9 +199,13 @@
     activeCategory = categorySelect?.value || "";
     activeViewStatus = viewStatusSelect?.value || "";
     activeSort = sortSelect?.value || "publishedAt";
+    loadedArticleCount = 0;
     nextCursor = null;
     hasMoreArticles = true;
     feed.replaceChildren();
+    feed.setAttribute("aria-busy", "true");
+    updateFeedCount("טוען כתבות...");
+    hideFeedRetry();
     if (feedEnd) feedEnd.hidden = true;
     loadFeed();
   }
@@ -255,6 +296,20 @@
     if (!event.target.matches('select[name="category"], select[name="viewStatus"], select[name="sort"]')) return;
     clearTimeout(searchTimer);
     resetFeed();
+  });
+
+  // Restore every feed control to its initial value with one action.
+  clearFiltersButton?.addEventListener("click", () => {
+    filters?.reset();
+    clearTimeout(searchTimer);
+    resetFeed();
+    searchInput?.focus();
+  });
+
+  // Retry the same first page or cursor after a temporary request failure.
+  retryButton?.addEventListener("click", () => {
+    hasMoreArticles = true;
+    loadFeed();
   });
 
   // Check the server asynchronously from the browser.

@@ -24,7 +24,8 @@ member must still read, run, and explain the code.
 ## Main design decisions
 
 - The public article page is rendered by EJS on the server for SEO.
-- The public feed will use AJAX for search, filters, sorting, and pagination.
+- The public feed uses AJAX for search, filters, sorting, and pagination.
+- Cursor pagination continues from the last sort values instead of using a growing database offset.
 - `workingVersion` and `publishedVersion` keep unpublished edits away from readers.
 - Passwords use Node's built-in `crypto.scrypt` and are never stored as plain text.
 - Sessions have a MongoDB model so a server restart does not have to log users out.
