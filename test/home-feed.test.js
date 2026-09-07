@@ -38,7 +38,7 @@ test("public feed returns only approved fields from twenty published articles", 
   await getPublicFeed({}, res, (error) => { forwardedError = error; }); // Run the real controller action.
 
   assert.equal(forwardedError, null); // Confirm the successful query did not reach error middleware.
-  assert.deepEqual(calls.filter, { status: "published", publishedVersion: { $ne: null } }); // Confirm drafts and missing public versions are excluded.
+  assert.deepEqual(calls.filter, { "publishedVersion.publishedAt": { $ne: null } }); // Include every approved snapshot even while its newer update is under review.
   assert.equal(calls.skip, undefined); // Confirm cursor pagination does not scan and skip earlier results.
   assert.equal(calls.limit, 21); // Confirm one extra result is read only to detect another page.
   assert.deepEqual(calls.sort, { "publishedVersion.publishedAt": -1, _id: -1 }); // Confirm newest articles appear first with stable ordering.
@@ -52,6 +52,36 @@ test("public feed returns only approved fields from twenty published articles", 
   assert.equal(res.body.articles[0].viewCount, 12); // Confirm the public popularity counter is available.
   assert.equal(Object.hasOwn(res.body.articles[0], "workingVersion"), false); // Confirm the private working version is never returned.
   assert.equal(JSON.stringify(res.body).includes("כותרת פרטית"), false); // Confirm no private draft text leaked indirectly.
+});
+
+test("public feed keeps the approved version visible while an update is under review", async (context) => { // Protect the public version during the cross-team update workflow.
+  const originalFind = Article.find; // Keep the real database method for later tests.
+  context.after(() => { Article.find = originalFind; }); // Restore the real method after this focused test.
+  let capturedFilter = null; // Store the public filter so the workflow rule can be checked.
+  const pendingUpdate = { // Build an article whose new working version is waiting for editor approval.
+    _id: "64f000000000000000000010", // Use a valid stable MongoDB identifier.
+    status: "pending_review", // Match the state created when a published update is submitted.
+    author: { displayName: "כתב לדוגמה" }, // Provide the public author name.
+    workingVersion: { title: "כותרת חדשה שעדיין פרטית" }, // Keep the unapproved update on the record.
+    publishedVersion: { title: "כותרת מאושרת קיימת", summary: "תקציר מאושר", imageUrl: "/image.svg", category: "חדשות", publishedAt: new Date("2026-09-01T10:00:00.000Z") }, // Keep the last approved snapshot available.
+    viewCount: 10 // Provide normal public card metadata.
+  };
+  const query = { // Simulate the Mongoose query chain used by the feed.
+    select() { return this; }, // Keep field selection chainable.
+    populate() { return this; }, // Keep author population chainable.
+    sort() { return this; }, // Keep public ordering chainable.
+    limit() { return this; }, // Keep the fixed page limit chainable.
+    async lean() { return [pendingUpdate]; } // Return the article that still has an approved snapshot.
+  };
+  Article.find = (filter) => { capturedFilter = filter; return query; }; // Capture the real filter without opening MongoDB.
+  const res = createResponse(); // Collect the controller response.
+
+  await getPublicFeed({}, res, () => {}); // Load the feed while the newer version is in review.
+
+  assert.equal(Object.hasOwn(capturedFilter, "status"), false); // Do not hide an approved snapshot because its workflow status changed.
+  assert.deepEqual(capturedFilter["publishedVersion.publishedAt"], { $ne: null }); // Require a real approved publication marker.
+  assert.equal(res.body.articles[0].title, "כותרת מאושרת קיימת"); // Continue showing the last approved title.
+  assert.equal(JSON.stringify(res.body).includes("כותרת חדשה שעדיין פרטית"), false); // Never expose the working update.
 });
 
 test("public feed continues from a cursor without using skip", async (context) => { // Verify efficient continuation and the final-page flag.
@@ -100,7 +130,7 @@ test("public feed searches only approved article text through the MongoDB index"
 
   await getPublicFeed({ query: { search: "  חדשות מקומיות  " } }, res, () => {}); // Search with surrounding spaces like normal user input.
 
-  assert.deepEqual(capturedFilter, { status: "published", publishedVersion: { $ne: null }, $text: { $search: "חדשות מקומיות" } }); // Confirm the search stays inside the published-only query.
+  assert.deepEqual(capturedFilter, { "publishedVersion.publishedAt": { $ne: null }, $text: { $search: "חדשות מקומיות" } }); // Confirm search stays limited to articles with an approved public snapshot.
   assert.equal(res.body.search, "חדשות מקומיות"); // Confirm the normalized term is returned for predictable AJAX behavior.
   assert.equal(res.body.articles.length, 0); // Confirm an empty search result remains a successful response.
 });
@@ -130,7 +160,7 @@ test("public feed combines category and viewed filters for one anonymous visitor
   await getPublicFeed(req, res, () => {}); // Run the combined filters through the real controller.
 
   assert.deepEqual(calls.distinct, { field: "article", filter: { clientKeyHash: hashClientKey("browser-123") } }); // Confirm raw visitor keys never enter MongoDB.
-  assert.deepEqual(calls.articleFilter, { status: "published", publishedVersion: { $ne: null }, "publishedVersion.category": "תרבות", _id: { $in: viewedIds } }); // Confirm the query requires approved, matching, viewed articles.
+  assert.deepEqual(calls.articleFilter, { "publishedVersion.publishedAt": { $ne: null }, "publishedVersion.category": "תרבות", _id: { $in: viewedIds } }); // Confirm the query requires approved, matching, viewed articles.
   assert.deepEqual(res.body.filters, { category: "תרבות", viewStatus: "viewed" }); // Confirm AJAX receives the normalized active filters.
 });
 
@@ -188,8 +218,8 @@ test("feed models define compound indexes for filters, sorting, and viewed statu
   const articleIndexes = Article.schema.indexes().map(([fields]) => fields); // Read only index key definitions from the article schema.
   const viewIndexes = ViewEvent.schema.indexes().map(([fields]) => fields); // Read only index key definitions from view events.
 
-  assert.ok(articleIndexes.some((fields) => JSON.stringify(fields) === JSON.stringify({ status: 1, "publishedVersion.publishedAt": -1, _id: -1 }))); // Cover newest-first cursor pages.
-  assert.ok(articleIndexes.some((fields) => JSON.stringify(fields) === JSON.stringify({ status: 1, "publishedVersion.category": 1, viewCount: -1, "publishedVersion.publishedAt": -1, _id: -1 }))); // Cover category plus popularity pages.
+  assert.ok(articleIndexes.some((fields) => JSON.stringify(fields) === JSON.stringify({ "publishedVersion.publishedAt": -1, _id: -1 }))); // Cover newest-first cursor pages for every approved snapshot.
+  assert.ok(articleIndexes.some((fields) => JSON.stringify(fields) === JSON.stringify({ "publishedVersion.category": 1, viewCount: -1, "publishedVersion.publishedAt": -1, _id: -1 }))); // Cover category plus popularity pages.
   assert.ok(viewIndexes.some((fields) => JSON.stringify(fields) === JSON.stringify({ clientKeyHash: 1, article: 1 }))); // Cover anonymous viewed/unviewed lookups.
 });
 

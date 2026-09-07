@@ -47,6 +47,7 @@
         <span class="status-pill status-live"><i></i><span id="feed-count">טוען כתבות...</span></span>
       </div>
 
+      <%# Keep every public feed control inside one AJAX form. %>
       <form class="filters-card" id="feed-filters" novalidate>
         <label>
           חיפוש
@@ -84,7 +85,9 @@
         </div>
       </form>
 
+      <%# Let browser JavaScript insert only approved article cards here. %>
       <div class="feed" id="feed" aria-live="polite" aria-busy="true"></div>
+      <%# Show accessible loading, retry, infinite-scroll, and final-page states. %>
       <div class="loading-indicator" id="feed-loading" role="status">טוען כתבות...</div>
       <div class="feed-retry" id="feed-retry" role="status" aria-live="polite" hidden>
         <span id="feed-retry-message">לא הצלחנו לטעון את הכתבות.</span>

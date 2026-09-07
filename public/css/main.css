@@ -872,11 +872,12 @@ code { padding: 3px 7px; border-radius: 6px; color: var(--accent); background: r
   .brand small { display: none; }
   .main-nav { gap: 2px; }
   .main-nav a, .nav-link-button { padding-inline: 9px; }
-  .hero { padding: 68px 0 56px; }
+  .hero { overflow: hidden; padding: 68px 0 56px; }
   .hero h1, .auth-intro h1 { font-size: clamp(45px, 15vw, 70px); }
   .hero-copy { font-size: 16px; }
   .hero-trust { gap: 16px; margin-top: 30px; }
   .hero-visual { min-height: 340px; }
+  .visual-orbit-one { inset-inline: 0; } /* Keep the decorative orbit inside the narrow phone viewport. */
   .signal-card { width: min(360px, 82%); padding: 21px; }
   .signal-headline { margin-top: 38px; font-size: 32px; }
   .floating-card-top { right: -2%; }

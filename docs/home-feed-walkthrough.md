@@ -67,10 +67,10 @@ articles when two records have the same date or number of views.
 
 The Article schema defines compound indexes for:
 
-- publication status, date, and ID;
-- publication status, category, date, and ID;
-- publication status, view count, date, and ID;
-- publication status, category, view count, date, and ID;
+- approved publication date and ID;
+- approved category, publication date, and ID;
+- view count, approved publication date, and ID;
+- approved category, view count, publication date, and ID;
 - approved title and summary text search.
 
 ViewEvent has a compound `clientKeyHash + article` index for the
@@ -111,8 +111,10 @@ on small screens.
 ## Short defense explanation
 
 The page is rendered with EJS, but the article list is loaded with AJAX. The
-server always filters for published articles and returns only the approved
-version. Search and filters become one MongoDB query. Infinite scroll uses a
+server filters for articles that have an approved publication date and returns
+only the approved version. This keeps the approved version visible while a
+newer working version is under review. Search and filters become one MongoDB
+query. Infinite scroll uses a
 cursor instead of `skip`, and compound indexes match the supported sort and
 filter combinations. The browser safely creates cards, ignores stale requests,
 and lets the visitor recover from a temporary error without reloading.
