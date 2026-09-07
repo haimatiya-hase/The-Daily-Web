@@ -1,11 +1,62 @@
 // Load the article model used by the public feed.
+const mongoose = require("mongoose");
 const Article = require("../models/article.model");
 const ViewEvent = require("../models/view-event.model");
 const { hashClientKey } = require("../utils/client-key");
+const HttpError = require("../utils/http-error");
 
 // Keep every feed request at the assignment limit of twenty articles.
 const FEED_PAGE_SIZE = 20;
 const FEED_CATEGORIES = ["חדשות", "כלכלה", "תרבות", "ספורט", "טכנולוגיה"];
+
+// Turn the last article into a small URL-safe cursor for the next request.
+function createCursor(article, sortBy) {
+  const publishedAt = new Date(article.publishedVersion?.publishedAt);
+  if (!mongoose.isValidObjectId(article._id) || Number.isNaN(publishedAt.getTime())) return null;
+
+  const values = { sort: sortBy, id: String(article._id), publishedAt: publishedAt.toISOString() };
+  if (sortBy === "popularity") values.viewCount = Number(article.viewCount) || 0;
+  return Buffer.from(JSON.stringify(values)).toString("base64url");
+}
+
+// Read only valid cursors created by this feed.
+function readCursor(value, sortBy) {
+  try {
+    if (!value || value.length > 500) return null;
+    const values = JSON.parse(Buffer.from(value, "base64url").toString("utf8"));
+    const publishedAt = new Date(values.publishedAt);
+    if (values.sort !== sortBy) return null;
+    if (!mongoose.isValidObjectId(values.id) || Number.isNaN(publishedAt.getTime())) return null;
+    if (sortBy === "popularity" && (!Number.isFinite(values.viewCount) || values.viewCount < 0)) return null;
+
+    return {
+      id: new mongoose.Types.ObjectId(values.id),
+      publishedAt,
+      viewCount: Number(values.viewCount) || 0
+    };
+  } catch (error) {
+    return null;
+  }
+}
+
+// Continue after the previous article without scanning and skipping older rows.
+function addCursorFilter(filter, cursor, sortBy) {
+  if (!cursor) return;
+
+  if (sortBy === "popularity") {
+    filter.$or = [
+      { viewCount: { $lt: cursor.viewCount } },
+      { viewCount: cursor.viewCount, "publishedVersion.publishedAt": { $lt: cursor.publishedAt } },
+      { viewCount: cursor.viewCount, "publishedVersion.publishedAt": cursor.publishedAt, _id: { $lt: cursor.id } }
+    ];
+    return;
+  }
+
+  filter.$or = [
+    { "publishedVersion.publishedAt": { $lt: cursor.publishedAt } },
+    { "publishedVersion.publishedAt": cursor.publishedAt, _id: { $lt: cursor.id } }
+  ];
+}
 
 // Render the public news feed shell.
 function showHome(req, res) {
@@ -21,10 +72,6 @@ function showHome(req, res) {
 // Return the newest approved article versions for the public feed.
 async function getPublicFeed(req, res, next) {
   try {
-    // Accept only a positive whole page number and fall back to the first page.
-    const pageValue = String(req.query?.page || "1");
-    const requestedPage = Number(pageValue);
-    const page = /^\d+$/.test(pageValue) && Number.isSafeInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1;
     // Keep the public search short and ignore surrounding spaces.
     const search = String(req.query?.search || "").trim().slice(0, 100);
     const requestedCategory = String(req.query?.category || "").trim();
@@ -32,6 +79,9 @@ async function getPublicFeed(req, res, next) {
     const requestedViewStatus = String(req.query?.viewStatus || "").trim();
     const viewStatus = ["viewed", "unviewed"].includes(requestedViewStatus) ? requestedViewStatus : "";
     const sortBy = req.query?.sort === "popularity" ? "popularity" : "publishedAt";
+    const cursorValue = String(req.query?.cursor || "").trim();
+    const cursor = readCursor(cursorValue, sortBy);
+    if (cursorValue && !cursor) throw new HttpError(400, "Invalid feed cursor.");
     const clientKey = String(req.get?.("X-Client-Key") || "").trim().slice(0, 100);
     const filter = {
       status: "published",
@@ -51,6 +101,7 @@ async function getPublicFeed(req, res, next) {
         ? { $in: viewedArticleIds }
         : { $nin: viewedArticleIds };
     }
+    addCursorFilter(filter, cursor, sortBy);
 
     // Keep pagination stable when several articles share the same main sort value.
     const sortOrder = sortBy === "popularity"
@@ -62,13 +113,16 @@ async function getPublicFeed(req, res, next) {
       .select("author viewCount publishedVersion.title publishedVersion.summary publishedVersion.imageUrl publishedVersion.category publishedVersion.publishedAt")
       .populate("author", "displayName")
       .sort(sortOrder)
-      .skip((page - 1) * FEED_PAGE_SIZE)
       .limit(FEED_PAGE_SIZE + 1)
       .lean();
 
     // Use one extra result to know whether another page is available.
-    const hasMore = articles.length > FEED_PAGE_SIZE;
+    const hasExtraArticle = articles.length > FEED_PAGE_SIZE;
     const pageArticles = articles.slice(0, FEED_PAGE_SIZE);
+    const nextCursor = hasExtraArticle
+      ? createCursor(pageArticles[pageArticles.length - 1], sortBy)
+      : null;
+    const hasMore = Boolean(nextCursor);
 
     // Flatten the approved version into a small and predictable public response.
     const publicArticles = pageArticles.map((article) => ({
@@ -84,7 +138,7 @@ async function getPublicFeed(req, res, next) {
 
     res.json({
       articles: publicArticles,
-      pagination: { page, pageSize: FEED_PAGE_SIZE, hasMore },
+      pagination: { pageSize: FEED_PAGE_SIZE, hasMore, nextCursor },
       search,
       filters: { category, viewStatus },
       sort: sortBy

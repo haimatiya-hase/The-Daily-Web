@@ -17,7 +17,7 @@ test("public feed returns only approved fields from twenty published articles", 
   context.after(() => { Article.find = originalFind; }); // Restore the real method when this test ends.
   const calls = {}; // Record every part of the simulated Mongoose query.
   const databaseArticle = { // Build one result containing both private and public versions.
-    _id: "article-1", // Use a stable ID for the public link.
+    _id: "64f000000000000000000001", // Use a stable MongoDB ID for the public link and cursor.
     author: { displayName: "כתב לדוגמה" }, // Provide the populated public author name.
     workingVersion: { title: "כותרת פרטית" }, // Include private data that must never reach the response.
     publishedVersion: { title: "כותרת מאושרת", summary: "תקציר מאושר", imageUrl: "/image.svg", category: "חדשות", publishedAt: new Date("2026-09-01T10:00:00.000Z") }, // Provide the approved public snapshot.
@@ -39,25 +39,30 @@ test("public feed returns only approved fields from twenty published articles", 
 
   assert.equal(forwardedError, null); // Confirm the successful query did not reach error middleware.
   assert.deepEqual(calls.filter, { status: "published", publishedVersion: { $ne: null } }); // Confirm drafts and missing public versions are excluded.
-  assert.equal(calls.skip, 0); // Confirm the first page starts with the newest result.
+  assert.equal(calls.skip, undefined); // Confirm cursor pagination does not scan and skip earlier results.
   assert.equal(calls.limit, 21); // Confirm one extra result is read only to detect another page.
   assert.deepEqual(calls.sort, { "publishedVersion.publishedAt": -1, _id: -1 }); // Confirm newest articles appear first with stable ordering.
   assert.equal(res.body.sort, "publishedAt"); // Confirm the default sort choice is explicit in the AJAX response.
   assert.equal(calls.populate.path, "author"); // Confirm the reporter name is loaded for each card.
   assert.equal(res.body.articles.length, 20); // Confirm the browser still receives exactly twenty articles.
-  assert.deepEqual(res.body.pagination, { page: 1, pageSize: 20, hasMore: true }); // Confirm the browser knows another page is available.
+  assert.equal(res.body.pagination.pageSize, 20); // Confirm the page size remains fixed.
+  assert.equal(res.body.pagination.hasMore, true); // Confirm the browser knows another page is available.
+  assert.equal(typeof res.body.pagination.nextCursor, "string"); // Confirm the next request receives a URL-safe cursor.
   assert.equal(res.body.articles[0].title, "כותרת מאושרת"); // Confirm the approved title reaches the browser.
   assert.equal(res.body.articles[0].viewCount, 12); // Confirm the public popularity counter is available.
   assert.equal(Object.hasOwn(res.body.articles[0], "workingVersion"), false); // Confirm the private working version is never returned.
   assert.equal(JSON.stringify(res.body).includes("כותרת פרטית"), false); // Confirm no private draft text leaked indirectly.
 });
 
-test("public feed skips earlier results and stops after the final page", async (context) => { // Verify page navigation and the final-page flag.
+test("public feed continues from a cursor without using skip", async (context) => { // Verify efficient continuation and the final-page flag.
   const originalFind = Article.find; // Keep the real database method for other tests.
   context.after(() => { Article.find = originalFind; }); // Restore the real method when this test ends.
-  const calls = {}; // Record the page offset used by the controller.
-  const finalArticle = { _id: "article-21", author: null, publishedVersion: { title: "כתבה אחרונה", summary: "תקציר", imageUrl: "", category: "תרבות", publishedAt: new Date() }, viewCount: 0 }; // Build one result on the final page.
-  const query = { // Simulate the Mongoose methods used for page two.
+  const calls = {}; // Record the cursor filter used by the controller.
+  const cursorId = "64f000000000000000000020"; // Identify the last article from the previous page.
+  const cursorDate = new Date("2026-09-01T10:00:00.000Z"); // Keep its publication date for newest-first continuation.
+  const cursor = Buffer.from(JSON.stringify({ sort: "publishedAt", id: cursorId, publishedAt: cursorDate.toISOString() })).toString("base64url"); // Build the same URL-safe cursor returned by the feed.
+  const finalArticle = { _id: "64f000000000000000000021", author: null, publishedVersion: { title: "כתבה אחרונה", summary: "תקציר", imageUrl: "", category: "תרבות", publishedAt: new Date("2026-08-31T10:00:00.000Z") }, viewCount: 0 }; // Build one result after the cursor.
+  const query = { // Simulate the Mongoose methods used for the next cursor page.
     select() { return this; }, // Keep the selected field step chainable.
     populate() { return this; }, // Keep the author population step chainable.
     sort() { return this; }, // Keep the ordering step chainable.
@@ -65,14 +70,16 @@ test("public feed skips earlier results and stops after the final page", async (
     limit(value) { calls.limit = value; return this; }, // Record the look-ahead query size.
     async lean() { return [finalArticle]; } // Return fewer than twenty-one results to mark the final page.
   };
-  Article.find = () => query; // Replace MongoDB with the final-page query.
+  Article.find = (filter) => { calls.filter = filter; return query; }; // Capture the cursor range sent to MongoDB.
   const res = createResponse(); // Create the response collector.
 
-  await getPublicFeed({ query: { page: "2" } }, res, () => {}); // Request the second feed page.
+  await getPublicFeed({ query: { cursor } }, res, () => {}); // Request the articles after the previous cursor.
 
-  assert.equal(calls.skip, 20); // Confirm page two starts after the first twenty results.
+  assert.equal(calls.skip, undefined); // Confirm the query never scans a growing offset.
   assert.equal(calls.limit, 21); // Confirm the query still checks for one additional result.
-  assert.deepEqual(res.body.pagination, { page: 2, pageSize: 20, hasMore: false }); // Confirm infinite scroll knows when to stop.
+  assert.equal(calls.filter.$or[0]["publishedVersion.publishedAt"].$lt.toISOString(), cursorDate.toISOString()); // Continue after older publication dates.
+  assert.equal(String(calls.filter.$or[1]._id.$lt), cursorId); // Use the ID when publication dates are equal.
+  assert.deepEqual(res.body.pagination, { pageSize: 20, hasMore: false, nextCursor: null }); // Confirm infinite scroll knows when to stop.
   assert.equal(res.body.articles[0].authorName, "מערכת The Daily Web"); // Confirm a missing author uses the public fallback name.
 });
 
@@ -153,6 +160,10 @@ test("public feed sorts by popularity with stable date and id tie breakers", asy
   const originalFind = Article.find; // Keep the real database method for other tests.
   context.after(() => { Article.find = originalFind; }); // Restore the real method when this test ends.
   let capturedSort = null; // Store the ordering sent to MongoDB.
+  let capturedFilter = null; // Store the popularity cursor range.
+  const cursorId = "64f000000000000000000040"; // Identify the last popular article already returned.
+  const cursorDate = new Date("2026-09-02T12:00:00.000Z"); // Keep its publication date as the second sort value.
+  const cursor = Buffer.from(JSON.stringify({ sort: "popularity", id: cursorId, publishedAt: cursorDate.toISOString(), viewCount: 75 })).toString("base64url"); // Build a popularity cursor.
   const query = { // Simulate a valid empty popularity query.
     select() { return this; }, // Keep the selected field step chainable.
     populate() { return this; }, // Keep the author population step chainable.
@@ -161,13 +172,38 @@ test("public feed sorts by popularity with stable date and id tie breakers", asy
     limit() { return this; }, // Keep the look-ahead limit step chainable.
     async lean() { return []; } // Return no cards because only ordering is under test.
   };
-  Article.find = () => query; // Replace MongoDB with the recorded query.
+  Article.find = (filter) => { capturedFilter = filter; return query; }; // Capture both the range and ordering.
   const res = createResponse(); // Create the response collector.
 
-  await getPublicFeed({ query: { sort: "popularity" } }, res, () => {}); // Request the most viewed articles first.
+  await getPublicFeed({ query: { sort: "popularity", cursor } }, res, () => {}); // Request the next popular articles.
 
   assert.deepEqual(capturedSort, { viewCount: -1, "publishedVersion.publishedAt": -1, _id: -1 }); // Confirm views are primary and equal values use deterministic ordering.
+  assert.deepEqual(capturedFilter.$or[0], { viewCount: { $lt: 75 } }); // Continue after articles with a lower view count.
+  assert.equal(capturedFilter.$or[1]["publishedVersion.publishedAt"].$lt.toISOString(), cursorDate.toISOString()); // Use publication time when view counts match.
+  assert.equal(String(capturedFilter.$or[2]._id.$lt), cursorId); // Use the ID as the final stable tie breaker.
   assert.equal(res.body.sort, "popularity"); // Confirm the browser receives the active sort mode.
+});
+
+test("feed models define compound indexes for filters, sorting, and viewed status", () => { // Verify the schema matches the optimized query shapes.
+  const articleIndexes = Article.schema.indexes().map(([fields]) => fields); // Read only index key definitions from the article schema.
+  const viewIndexes = ViewEvent.schema.indexes().map(([fields]) => fields); // Read only index key definitions from view events.
+
+  assert.ok(articleIndexes.some((fields) => JSON.stringify(fields) === JSON.stringify({ status: 1, "publishedVersion.publishedAt": -1, _id: -1 }))); // Cover newest-first cursor pages.
+  assert.ok(articleIndexes.some((fields) => JSON.stringify(fields) === JSON.stringify({ status: 1, "publishedVersion.category": 1, viewCount: -1, "publishedVersion.publishedAt": -1, _id: -1 }))); // Cover category plus popularity pages.
+  assert.ok(viewIndexes.some((fields) => JSON.stringify(fields) === JSON.stringify({ clientKeyHash: 1, article: 1 }))); // Cover anonymous viewed/unviewed lookups.
+});
+
+test("public feed rejects a malformed cursor before querying MongoDB", async (context) => { // Prevent broken cursors from repeating or mixing feed pages.
+  const originalFind = Article.find; // Keep the real database method for later tests.
+  context.after(() => { Article.find = originalFind; }); // Restore the real method when this test ends.
+  let queryStarted = false; // Detect an unnecessary database query.
+  Article.find = () => { queryStarted = true; }; // Record if cursor validation failed to stop the query.
+  let forwardedError = null; // Store the expected HTTP error.
+
+  await getPublicFeed({ query: { cursor: "not-a-valid-cursor" } }, createResponse(), (error) => { forwardedError = error; }); // Send invalid client input.
+
+  assert.equal(queryStarted, false); // Confirm invalid input is rejected before MongoDB work begins.
+  assert.equal(forwardedError?.statusCode, 400); // Confirm the shared API handler can return a client error.
 });
 
 test("public feed forwards database failures to the shared API handler", async (context) => { // Verify normal Express error handling.

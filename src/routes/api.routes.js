@@ -20,7 +20,7 @@ router.get("/health", (req, res) => {
   });
 });
 
-router.get("/articles", homeController.getPublicFeed); // Return the first twenty published articles.
+router.get("/articles", homeController.getPublicFeed); // Return one efficient cursor page of published articles.
 
 router.get("/reporter/articles", requireRole("reporter"), reporterController.listReporterArticles); // List only the logged-in reporter's articles.
 router.post("/reporter/articles", requireRole("reporter"), reporterController.createReporterArticle); // Create a new draft for the logged-in reporter.

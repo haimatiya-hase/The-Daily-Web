@@ -12,7 +12,7 @@
   const healthLink = document.querySelector('a[href="/api/health"]');
   // Find the area that displays weather on the home page.
   const weatherContent = document.querySelector("#weather-content");
-  let nextPage = 1;
+  let nextCursor = null;
   let isFeedLoading = false;
   let hasMoreArticles = true;
   let activeSearch = "";
@@ -99,13 +99,14 @@
     if (!feed || !loadingIndicator || isFeedLoading || !hasMoreArticles) return;
 
     const requestVersion = ++feedRequestVersion;
-    const requestedPage = nextPage;
+    const requestedCursor = nextCursor;
     isFeedLoading = true;
     loadingIndicator.textContent = "טוען כתבות...";
     loadingIndicator.hidden = false;
 
     try {
-      const parameters = new URLSearchParams({ page: String(requestedPage) });
+      const parameters = new URLSearchParams();
+      if (requestedCursor) parameters.set("cursor", requestedCursor);
       if (activeSearch) parameters.set("search", activeSearch);
       if (activeCategory) parameters.set("category", activeCategory);
       if (activeViewStatus) parameters.set("viewStatus", activeViewStatus);
@@ -120,7 +121,7 @@
       // Ignore an older response after the visitor starts a newer search.
       if (requestVersion !== feedRequestVersion) return;
 
-      if (requestedPage === 1 && articles.length === 0) {
+      if (!requestedCursor && articles.length === 0) {
         const hasActiveFilter = activeSearch || activeCategory || activeViewStatus;
         const title = hasActiveFilter ? "לא נמצאו כתבות מתאימות" : "עדיין אין כתבות שפורסמו";
         const message = hasActiveFilter ? "אפשר לשנות את החיפוש או את הסינון." : "כתבות שאושרו יופיעו כאן ברגע שיפורסמו.";
@@ -131,14 +132,14 @@
 
       feed.append(...articles.map(createArticleCard));
       hasMoreArticles = data.pagination?.hasMore === true;
-      nextPage = requestedPage + 1;
+      nextCursor = data.pagination?.nextCursor || null;
 
       if (!hasMoreArticles && feedEnd) {
         feedEnd.hidden = false;
       }
     } catch (error) {
       if (requestVersion !== feedRequestVersion) return;
-      if (requestedPage === 1) {
+      if (!requestedCursor) {
         showFeedMessage("לא הצלחנו לטעון את הכתבות", "אפשר לרענן את העמוד ולנסות שוב בעוד רגע.");
         hasMoreArticles = false;
       } else {
@@ -161,7 +162,7 @@
     activeCategory = categorySelect?.value || "";
     activeViewStatus = viewStatusSelect?.value || "";
     activeSort = sortSelect?.value || "publishedAt";
-    nextPage = 1;
+    nextCursor = null;
     hasMoreArticles = true;
     feed.replaceChildren();
     if (feedEnd) feedEnd.hidden = true;
