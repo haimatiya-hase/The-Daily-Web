@@ -42,6 +42,7 @@ test("public feed returns only approved fields from twenty published articles", 
   assert.equal(calls.skip, 0); // Confirm the first page starts with the newest result.
   assert.equal(calls.limit, 21); // Confirm one extra result is read only to detect another page.
   assert.deepEqual(calls.sort, { "publishedVersion.publishedAt": -1, _id: -1 }); // Confirm newest articles appear first with stable ordering.
+  assert.equal(res.body.sort, "publishedAt"); // Confirm the default sort choice is explicit in the AJAX response.
   assert.equal(calls.populate.path, "author"); // Confirm the reporter name is loaded for each card.
   assert.equal(res.body.articles.length, 20); // Confirm the browser still receives exactly twenty articles.
   assert.deepEqual(res.body.pagination, { page: 1, pageSize: 20, hasMore: true }); // Confirm the browser knows another page is available.
@@ -146,6 +147,27 @@ test("public feed excludes viewed articles when unviewed is selected", async (co
   await getPublicFeed(req, createResponse(), () => {}); // Run the unviewed filter through the real controller.
 
   assert.deepEqual(capturedFilter._id, { $nin: ["article-3"] }); // Confirm viewed IDs are removed from the public feed.
+});
+
+test("public feed sorts by popularity with stable date and id tie breakers", async (context) => { // Verify popular articles can be paginated predictably.
+  const originalFind = Article.find; // Keep the real database method for other tests.
+  context.after(() => { Article.find = originalFind; }); // Restore the real method when this test ends.
+  let capturedSort = null; // Store the ordering sent to MongoDB.
+  const query = { // Simulate a valid empty popularity query.
+    select() { return this; }, // Keep the selected field step chainable.
+    populate() { return this; }, // Keep the author population step chainable.
+    sort(value) { capturedSort = value; return this; }, // Capture the complete stable ordering.
+    skip() { return this; }, // Keep the page offset step chainable.
+    limit() { return this; }, // Keep the look-ahead limit step chainable.
+    async lean() { return []; } // Return no cards because only ordering is under test.
+  };
+  Article.find = () => query; // Replace MongoDB with the recorded query.
+  const res = createResponse(); // Create the response collector.
+
+  await getPublicFeed({ query: { sort: "popularity" } }, res, () => {}); // Request the most viewed articles first.
+
+  assert.deepEqual(capturedSort, { viewCount: -1, "publishedVersion.publishedAt": -1, _id: -1 }); // Confirm views are primary and equal values use deterministic ordering.
+  assert.equal(res.body.sort, "popularity"); // Confirm the browser receives the active sort mode.
 });
 
 test("public feed forwards database failures to the shared API handler", async (context) => { // Verify normal Express error handling.

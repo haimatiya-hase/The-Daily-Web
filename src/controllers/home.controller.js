@@ -31,6 +31,7 @@ async function getPublicFeed(req, res, next) {
     const category = FEED_CATEGORIES.includes(requestedCategory) ? requestedCategory : "";
     const requestedViewStatus = String(req.query?.viewStatus || "").trim();
     const viewStatus = ["viewed", "unviewed"].includes(requestedViewStatus) ? requestedViewStatus : "";
+    const sortBy = req.query?.sort === "popularity" ? "popularity" : "publishedAt";
     const clientKey = String(req.get?.("X-Client-Key") || "").trim().slice(0, 100);
     const filter = {
       status: "published",
@@ -51,11 +52,16 @@ async function getPublicFeed(req, res, next) {
         : { $nin: viewedArticleIds };
     }
 
+    // Keep pagination stable when several articles share the same main sort value.
+    const sortOrder = sortBy === "popularity"
+      ? { viewCount: -1, "publishedVersion.publishedAt": -1, _id: -1 }
+      : { "publishedVersion.publishedAt": -1, _id: -1 };
+
     // Read only published articles and only the public fields needed by cards.
     const articles = await Article.find(filter)
       .select("author viewCount publishedVersion.title publishedVersion.summary publishedVersion.imageUrl publishedVersion.category publishedVersion.publishedAt")
       .populate("author", "displayName")
-      .sort({ "publishedVersion.publishedAt": -1, _id: -1 })
+      .sort(sortOrder)
       .skip((page - 1) * FEED_PAGE_SIZE)
       .limit(FEED_PAGE_SIZE + 1)
       .lean();
@@ -80,7 +86,8 @@ async function getPublicFeed(req, res, next) {
       articles: publicArticles,
       pagination: { page, pageSize: FEED_PAGE_SIZE, hasMore },
       search,
-      filters: { category, viewStatus }
+      filters: { category, viewStatus },
+      sort: sortBy
     });
   } catch (error) {
     // Let the shared API error handler return a safe JSON response.

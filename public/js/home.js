@@ -8,6 +8,7 @@
   const searchInput = filters?.querySelector('input[name="search"]');
   const categorySelect = filters?.querySelector('select[name="category"]');
   const viewStatusSelect = filters?.querySelector('select[name="viewStatus"]');
+  const sortSelect = filters?.querySelector('select[name="sort"]');
   const healthLink = document.querySelector('a[href="/api/health"]');
   // Find the area that displays weather on the home page.
   const weatherContent = document.querySelector("#weather-content");
@@ -17,6 +18,7 @@
   let activeSearch = "";
   let activeCategory = "";
   let activeViewStatus = "";
+  let activeSort = "publishedAt";
   let feedRequestVersion = 0;
   let searchTimer;
 
@@ -107,6 +109,7 @@
       if (activeSearch) parameters.set("search", activeSearch);
       if (activeCategory) parameters.set("category", activeCategory);
       if (activeViewStatus) parameters.set("viewStatus", activeViewStatus);
+      parameters.set("sort", activeSort);
       const headers = { Accept: "application/json" };
       if (clientKey) headers["X-Client-Key"] = clientKey;
       const response = await fetch(`/api/articles?${parameters}`, { headers });
@@ -157,6 +160,7 @@
     activeSearch = searchInput?.value.trim() || "";
     activeCategory = categorySelect?.value || "";
     activeViewStatus = viewStatusSelect?.value || "";
+    activeSort = sortSelect?.value || "publishedAt";
     nextPage = 1;
     hasMoreArticles = true;
     feed.replaceChildren();
@@ -245,9 +249,9 @@
     searchTimer = setTimeout(resetFeed, 350);
   });
 
-  // Apply category and view filters immediately without refreshing the page.
+  // Apply category, view, and sort controls immediately without refreshing the page.
   filters?.addEventListener("change", (event) => {
-    if (!event.target.matches('select[name="category"], select[name="viewStatus"]')) return;
+    if (!event.target.matches('select[name="category"], select[name="viewStatus"], select[name="sort"]')) return;
     clearTimeout(searchTimer);
     resetFeed();
   });
