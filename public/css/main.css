@@ -480,6 +480,12 @@ input:disabled, select:disabled, textarea:disabled { cursor: not-allowed; opacit
 /* Separate author and publication date from the summary. */
 .article-card .article-card-meta { margin-top: 18px; font-size: 12px; }
 
+/* Give the infinite-scroll observer a small target below the cards. */
+.feed-sentinel { height: 1px; }
+
+/* Confirm clearly when the visitor reaches the final article. */
+.feed-end { margin: 12px 0 0; color: var(--muted); font-size: 12px; text-align: center; }
+
 /* Give large error and placeholder pages a balanced vertical layout. */
 .large-empty { margin: 80px auto; padding: 80px 28px; }
 

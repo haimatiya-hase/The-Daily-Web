@@ -3,9 +3,14 @@
   const filters = document.querySelector("#feed-filters");
   const feed = document.querySelector("#feed");
   const loadingIndicator = document.querySelector("#feed-loading");
+  const feedSentinel = document.querySelector("#feed-sentinel");
+  const feedEnd = document.querySelector("#feed-end");
   const healthLink = document.querySelector('a[href="/api/health"]');
   // Find the area that displays weather on the home page.
   const weatherContent = document.querySelector("#weather-content");
+  let nextPage = 1;
+  let isFeedLoading = false;
+  let hasMoreArticles = true;
 
   // Format a valid publication date for Hebrew readers.
   function formatPublishedDate(value) {
@@ -61,27 +66,53 @@
     feed.replaceChildren(state);
   }
 
-  // Request and display the first twenty public articles.
+  // Request and append the next twenty public articles.
   async function loadFeed() {
-    if (!feed || !loadingIndicator) return;
+    if (!feed || !loadingIndicator || isFeedLoading || !hasMoreArticles) return;
+
+    isFeedLoading = true;
+    loadingIndicator.textContent = "טוען כתבות...";
+    loadingIndicator.hidden = false;
 
     try {
-      const response = await fetch("/api/articles", { headers: { Accept: "application/json" } });
+      const response = await fetch(`/api/articles?page=${nextPage}`, { headers: { Accept: "application/json" } });
       if (!response.ok) throw new Error("Feed request failed");
       const data = await response.json();
       const articles = Array.isArray(data.articles) ? data.articles : [];
 
-      if (articles.length === 0) {
+      if (nextPage === 1 && articles.length === 0) {
         showFeedMessage("עדיין אין כתבות שפורסמו", "כתבות שאושרו יופיעו כאן ברגע שיפורסמו.");
+        hasMoreArticles = false;
         return;
       }
 
-      feed.replaceChildren(...articles.map(createArticleCard));
+      feed.append(...articles.map(createArticleCard));
+      hasMoreArticles = data.pagination?.hasMore === true;
+      nextPage += 1;
+
+      if (!hasMoreArticles && feedEnd) {
+        feedEnd.hidden = false;
+      }
     } catch (error) {
-      showFeedMessage("לא הצלחנו לטעון את הכתבות", "אפשר לרענן את העמוד ולנסות שוב בעוד רגע.");
+      if (nextPage === 1) {
+        showFeedMessage("לא הצלחנו לטעון את הכתבות", "אפשר לרענן את העמוד ולנסות שוב בעוד רגע.");
+        hasMoreArticles = false;
+      } else {
+        loadingIndicator.textContent = "לא הצלחנו לטעון כתבות נוספות. אפשר לגלול ולנסות שוב.";
+      }
     } finally {
-      loadingIndicator.hidden = true;
+      isFeedLoading = false;
+      if (loadingIndicator.textContent === "טוען כתבות...") loadingIndicator.hidden = true;
     }
+  }
+
+  // Watch the end of the feed and request another page when it approaches.
+  function startInfiniteScroll() {
+    if (!feedSentinel || !("IntersectionObserver" in window)) return;
+    const observer = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting) loadFeed();
+    }, { rootMargin: "300px" });
+    observer.observe(feedSentinel);
   }
 
   // Convert standard weather codes into short Hebrew descriptions.
@@ -164,4 +195,6 @@
   loadWeather();
   // Load the first public news cards beside the weather widget.
   loadFeed();
+  // Start watching for the next page after the initial request begins.
+  startInfiniteScroll();
 })();

@@ -71,7 +71,9 @@
       </form>
 
       <div class="feed" id="feed" aria-live="polite"></div>
-      <div class="loading-indicator" id="feed-loading">טוען כתבות...</div>
+      <div class="loading-indicator" id="feed-loading" role="status">טוען כתבות...</div>
+      <div class="feed-sentinel" id="feed-sentinel" aria-hidden="true"></div>
+      <p class="feed-end" id="feed-end" hidden>הגעתם לסוף הפיד.</p>
     </div>
 
     <aside class="sidebar" aria-label="סרגל צד">

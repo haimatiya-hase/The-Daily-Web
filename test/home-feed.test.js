@@ -25,8 +25,9 @@ test("public feed returns only approved fields from twenty published articles", 
     select(value) { calls.select = value; return this; }, // Record the selected database fields.
     populate(path, fields) { calls.populate = { path, fields }; return this; }, // Record the author population.
     sort(value) { calls.sort = value; return this; }, // Record the newest-first ordering.
+    skip(value) { calls.skip = value; return this; }, // Record the offset for the selected page.
     limit(value) { calls.limit = value; return this; }, // Record the maximum feed size.
-    async lean() { return [databaseArticle]; } // Return plain objects like a real lean query.
+    async lean() { return Array.from({ length: 21 }, () => databaseArticle); } // Return one extra result so the controller can detect another page.
   };
   Article.find = (filter) => { calls.filter = filter; return query; }; // Replace MongoDB with the recorded in-memory query.
   const res = createResponse(); // Create the response collector.
@@ -36,13 +37,40 @@ test("public feed returns only approved fields from twenty published articles", 
 
   assert.equal(forwardedError, null); // Confirm the successful query did not reach error middleware.
   assert.deepEqual(calls.filter, { status: "published", publishedVersion: { $ne: null } }); // Confirm drafts and missing public versions are excluded.
-  assert.equal(calls.limit, 20); // Confirm the first request cannot return more than twenty articles.
+  assert.equal(calls.skip, 0); // Confirm the first page starts with the newest result.
+  assert.equal(calls.limit, 21); // Confirm one extra result is read only to detect another page.
   assert.deepEqual(calls.sort, { "publishedVersion.publishedAt": -1, _id: -1 }); // Confirm newest articles appear first with stable ordering.
   assert.equal(calls.populate.path, "author"); // Confirm the reporter name is loaded for each card.
+  assert.equal(res.body.articles.length, 20); // Confirm the browser still receives exactly twenty articles.
+  assert.deepEqual(res.body.pagination, { page: 1, pageSize: 20, hasMore: true }); // Confirm the browser knows another page is available.
   assert.equal(res.body.articles[0].title, "כותרת מאושרת"); // Confirm the approved title reaches the browser.
   assert.equal(res.body.articles[0].viewCount, 12); // Confirm the public popularity counter is available.
   assert.equal(Object.hasOwn(res.body.articles[0], "workingVersion"), false); // Confirm the private working version is never returned.
   assert.equal(JSON.stringify(res.body).includes("כותרת פרטית"), false); // Confirm no private draft text leaked indirectly.
+});
+
+test("public feed skips earlier results and stops after the final page", async (context) => { // Verify page navigation and the final-page flag.
+  const originalFind = Article.find; // Keep the real database method for other tests.
+  context.after(() => { Article.find = originalFind; }); // Restore the real method when this test ends.
+  const calls = {}; // Record the page offset used by the controller.
+  const finalArticle = { _id: "article-21", author: null, publishedVersion: { title: "כתבה אחרונה", summary: "תקציר", imageUrl: "", category: "תרבות", publishedAt: new Date() }, viewCount: 0 }; // Build one result on the final page.
+  const query = { // Simulate the Mongoose methods used for page two.
+    select() { return this; }, // Keep the selected field step chainable.
+    populate() { return this; }, // Keep the author population step chainable.
+    sort() { return this; }, // Keep the ordering step chainable.
+    skip(value) { calls.skip = value; return this; }, // Record how many earlier results are skipped.
+    limit(value) { calls.limit = value; return this; }, // Record the look-ahead query size.
+    async lean() { return [finalArticle]; } // Return fewer than twenty-one results to mark the final page.
+  };
+  Article.find = () => query; // Replace MongoDB with the final-page query.
+  const res = createResponse(); // Create the response collector.
+
+  await getPublicFeed({ query: { page: "2" } }, res, () => {}); // Request the second feed page.
+
+  assert.equal(calls.skip, 20); // Confirm page two starts after the first twenty results.
+  assert.equal(calls.limit, 21); // Confirm the query still checks for one additional result.
+  assert.deepEqual(res.body.pagination, { page: 2, pageSize: 20, hasMore: false }); // Confirm infinite scroll knows when to stop.
+  assert.equal(res.body.articles[0].authorName, "מערכת The Daily Web"); // Confirm a missing author uses the public fallback name.
 });
 
 test("public feed forwards database failures to the shared API handler", async (context) => { // Verify normal Express error handling.
