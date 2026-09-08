@@ -14,6 +14,149 @@ const DEMO_KEY_PREFIX = "demo-article-";
 const categories = ["חדשות", "כלכלה", "תרבות", "ספורט", "טכנולוגיה"];
 const statuses = ["draft", "pending_review", "published", "changes_requested"];
 
+// Keep only the five real team accounts in the local demo database.
+const legacyDemoUsernames = ["reporter.one", "reporter.two", "reporter.three", "editor.one"];
+const reporterAccounts = [
+  { username: "upr256", displayName: "איתי" },
+  { username: "ddd99913", displayName: "דור" },
+  { username: "lirishavit", displayName: "לירי שביט" },
+  { username: "shakedbremer", displayName: "שקד ברמר" }
+];
+const editorAccount = { username: "haimatiya", displayName: "חיים אטייה" };
+
+// Use a small set of public photos and rotate them by category.
+const imageSets = {
+  "חדשות": [
+    "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&w=1200&q=85",
+    "https://images.unsplash.com/photo-1495020689067-958852a7765e?auto=format&fit=crop&w=1200&q=85",
+    "https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=1200&q=85"
+  ],
+  "כלכלה": [
+    "https://images.unsplash.com/photo-1556761175-b413da4baf72?auto=format&fit=crop&w=1200&q=85",
+    "https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?auto=format&fit=crop&w=1200&q=85",
+    "https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&w=1200&q=85"
+  ],
+  "תרבות": [
+    "https://images.unsplash.com/photo-1513364776144-60967b0f800f?auto=format&fit=crop&w=1200&q=85",
+    "https://images.unsplash.com/photo-1460661419201-fd4cecdf8a8b?auto=format&fit=crop&w=1200&q=85",
+    "https://images.unsplash.com/photo-1549490349-8643362247b5?auto=format&fit=crop&w=1200&q=85"
+  ],
+  "ספורט": [
+    "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=1200&q=85",
+    "https://images.unsplash.com/photo-1552674605-db6ffd4facb5?auto=format&fit=crop&w=1200&q=85",
+    "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?auto=format&fit=crop&w=1200&q=85"
+  ],
+  "טכנולוגיה": [
+    "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=85",
+    "https://images.unsplash.com/photo-1484417894907-623942c8ee29?auto=format&fit=crop&w=1200&q=85",
+    "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=1200&q=85"
+  ]
+};
+
+// Give each category a few realistic stories for the demo feed.
+const storyTemplates = {
+  "חדשות": [
+    {
+      title: "תוכנית התחבורה החדשה מרחיבה את השירות בשעות העומס",
+      summary: "הרשות המקומית מציגה מסלולים חדשים ומקצרת את זמני ההמתנה במרכזי התעסוקה.",
+      content: "התוכנית החדשה כוללת תגבור של קווי האוטובוס בשעות הבוקר והערב, התאמת תחנות מרכזיות ושיפור המידע לנוסעים. ברשות אומרים כי הנתונים ייבדקו בחודשים הקרובים כדי למדוד את השפעת השינוי."
+    },
+    {
+      title: "מרכזי השירות העירוניים עוברים למערכת תורים דיגיטלית",
+      summary: "השירות החדש מאפשר לתושבים לבחור מועד מראש ולקבל עדכונים בזמן אמת.",
+      content: "המערכת הדיגיטלית נפתחת בהדרגה במרכזי השירות ותאפשר הזמנת תור, שינוי מועד וקבלת הודעה לפני ההגעה. המהלך נועד לצמצם עומסים ולשפר את חוויית השירות לתושבים."
+    },
+    {
+      title: "נפתח מסלול חדש להכשרת מתנדבים בקהילה",
+      summary: "התוכנית תכשיר תושבים לסיוע לקשישים, למשפחות וליוזמות שכונתיות.",
+      content: "המחזור הראשון של התוכנית יכלול מפגשי הכשרה, ליווי מקצועי וחיבור בין מתנדבים לעמותות מקומיות. המארגנים מצפים שהמודל יאפשר להרחיב את הפעילות לשכונות נוספות."
+    }
+  ],
+  "כלכלה": [
+    {
+      title: "עסקים קטנים מקבלים מסלול חדש למימון דיגיטלי",
+      summary: "המסלול נועד לקצר את תהליך הבדיקה ולתת לבעלי עסקים תמונת מצב ברורה.",
+      content: "היוזמה החדשה מרכזת מידע על הכנסות, הוצאות ותזרים במקום אחד. בעלי עסקים יוכלו לקבל הערכה ראשונית ולבחון אפשרויות מימון לפני פגישה עם יועץ."
+    },
+    {
+      title: "מדד אמון הצרכנים עולה בעקבות ירידה במחירי השירותים",
+      summary: "נתוני הסקר מצביעים על שיפור מתון בתחושת הביטחון הכלכלי של משקי הבית.",
+      content: "הסקר החודשי מצא כי יותר משפחות מרגישות בנוח לבצע רכישות מתוכננות. לצד זאת, המשתתפים עדיין מציינים את יוקר הדיור וההוצאות הקבועות כגורמים מרכזיים לחוסר ודאות."
+    },
+    {
+      title: "חברות מקומיות משקיעות יותר בהכשרת עובדים",
+      summary: "מנהלים מדווחים על מעבר מתוכניות חד־פעמיות להכשרה רציפה בתוך הארגון.",
+      content: "ההשקעה בהכשרת עובדים מתמקדת בכלים דיגיטליים, ניהול צוותים ושיפור תהליכי עבודה. מומחים אומרים כי הכשרה רציפה מסייעת לארגונים לשמור על עובדים ולהתאים את עצמם לשינויים."
+    }
+  ],
+  "תרבות": [
+    {
+      title: "פסטיבל הקיץ חוזר עם מופעי חוץ ויוצרים צעירים",
+      summary: "האירוע יציע מוזיקה, קולנוע ואמנות במרחבים פתוחים ברחבי העיר.",
+      content: "הפסטיבל יפגיש אמנים מוכרים עם יוצרים בתחילת דרכם ויכלול מופעים ללא עלות לצד אירועים בהרשמה מראש. צוות ההפקה מבטיח תוכנית מגוונת שמתאימה למשפחות ולקהל צעיר."
+    },
+    {
+      title: "תערוכה חדשה בוחנת את הקשר בין זיכרון למקום",
+      summary: "עבודות של שמונה אמנים מציגות סיפורים אישיים דרך צילום, וידאו וחפצים יומיומיים.",
+      content: "התערוכה מציעה נקודות מבט שונות על האופן שבו מקומות מוכרים נשמרים בזיכרון. המבקרים יכולים לשמוע את סיפורי האמנים ולשלב בין חוויה חזותית לתוכן קולי."
+    },
+    {
+      title: "ספרייה עירונית פותחת סדרת מפגשים על כתיבה עכשווית",
+      summary: "הסדרה תכלול שיחות עם סופרים, עורכים ויוצרים מהקהילה המקומית.",
+      content: "בכל מפגש יתמקדו המשתתפים בשלב אחר של תהליך הכתיבה, מבחירת רעיון ועד עריכה. המפגשים פתוחים לקהל וכוללים זמן לשאלות ולתרגול קצר."
+    }
+  ],
+  "ספורט": [
+    {
+      title: "מועדון הנוער משיק תוכנית אימונים פתוחה לכל הקהילה",
+      summary: "התוכנית תציע אימונים שבועיים במספר ענפים ותעודד השתתפות של בני נוער חדשים.",
+      content: "הפעילות תתקיים בקבוצות לפי גיל ורמת ניסיון ותכלול אימוני כושר, משחקי צוות והדרכה אישית. המועדון יאפשר שיעור היכרות ללא עלות במהלך החודש הראשון."
+    },
+    {
+      title: "הקבוצה המקומית משלימה הכנות לעונה החדשה",
+      summary: "הצוות המקצועי שילב שחקנים צעירים בסגל ומתמקד בשיפור משחק ההגנה.",
+      content: "במהלך משחקי ההכנה המאמן בחן הרכבים שונים ונתן דקות משחק לשחקנים שעלו מקבוצת הנוער. במועדון אומרים שהמטרה היא לבנות סגל מאוזן ולהתקדם בהדרגה."
+    },
+    {
+      title: "מרוץ הלילה העירוני יתקיים במסלול חדש",
+      summary: "המסלול יעבור ברחובות המרכזיים ויסתיים במתחם פעילות למשפחות.",
+      content: "המארגנים שינו את המסלול כדי להרחיב את אזורי העידוד ולהפחית את ההשפעה על התנועה. האירוע יכלול מקצים למרחקים שונים ותחנות מים לאורך הדרך."
+    }
+  ],
+  "טכנולוגיה": [
+    {
+      title: "כלי חדש מסייע לעסקים לאתר תקלות לפני שהן משפיעות על הלקוחות",
+      summary: "המערכת מרכזת נתוני שימוש ומתריעה לצוותים על חריגות בזמן אמת.",
+      content: "הכלי מנתח מדדים מרכזיים ומציג אותם בלוח בקרה פשוט. כאשר מזוהה שינוי חריג, הצוות מקבל התראה עם פרטי האירוע והצעה לבדיקה ראשונית."
+    },
+    {
+      title: "מעבדת החדשנות מציגה פתרונות לחיסכון באנרגיה",
+      summary: "הפרויקטים החדשים משלבים חיישנים, ניתוח נתונים ותכנון יעיל של מבנים.",
+      content: "המעבדה הציגה כמה אבות־טיפוס שנועדו למדוד צריכת חשמל ולהציע פעולות פשוטות לצמצום בזבוז. החוקרים מתכננים לבחון את הפתרונות במבנים ציבוריים במהלך השנה."
+    },
+    {
+      title: "קורס קוד פתוח מכשיר סטודנטים לעבודה על פרויקטים אמיתיים",
+      summary: "המשתתפים לומדים לעבוד עם Git, ביקורת קוד ותכנון משימות בצוות.",
+      content: "במסגרת הקורס הסטודנטים מפתחים מוצר קטן משלב הרעיון ועד פרסום גרסה עובדת. הדגש הוא על עבודה מסודרת, תיעוד ברור ושיתוף פעולה בין חברי הצוות."
+    }
+  ]
+};
+
+// Use familiar names so the demo looks like a real newsroom.
+const commentNames = ["רוני לוי", "שירה כהן", "אורי מזרחי", "נועה אברהם", "יונתן פרץ"];
+
+// Pick a story and an image in a stable way for every article number.
+function getStoryData(category, index) {
+  const categoryPosition = Math.floor((index - 1) / categories.length);
+  const stories = storyTemplates[category];
+  const images = imageSets[category];
+
+  return {
+    story: stories[categoryPosition % stories.length],
+    imageUrl: images[categoryPosition % images.length]
+  };
+}
+
 // Create a user only once and update its demo password when needed.
 async function getOrCreateUser(username, displayName, role) {
   // Hash the shared demo password before it reaches the user collection.
@@ -27,18 +170,24 @@ async function getOrCreateUser(username, displayName, role) {
   ).exec();
 }
 
+// Remove only the old placeholder accounts created by earlier seed versions.
+async function removeLegacyDemoUsers() {
+  await User.deleteMany({ username: { $in: legacyDemoUsernames } }).exec();
+}
+
 // Build one article version with clear content for the demo screen.
 function buildSnapshot(index, category, versionNumber, publishedAt = null, approvedBy = null) {
   // Make later versions visibly different during a classroom demo.
-  const updateText = versionNumber > 1 ? " - updated version" : "";
+  const updateText = versionNumber > 1 ? " (עדכון)" : "";
+  const { story, imageUrl } = getStoryData(category, index);
 
   // Return one valid article version that fits the Mongoose schema.
   return {
     versionNumber,
-    title: `Demo article ${index}${updateText}: A sample news story`,
-    summary: `Summary for demo article ${index}. It supports feed, search, and editor testing.`,
-    content: `This is demo content for article ${index}. It gives the team a safe record for testing the full article workflow.`,
-    imageUrl: "/images/demo-article.svg",
+    title: `${story.title}${updateText}`,
+    summary: story.summary,
+    content: story.content,
+    imageUrl,
     category,
     createdAt: new Date(),
     publishedAt,
@@ -115,8 +264,8 @@ async function refreshDemoRelatedData(articles) {
   // Add comments for the first 20 demo articles.
   const commentDocuments = articles.slice(0, 20).map((article, index) => ({
     article: article._id,
-    guestName: `Demo reader ${index + 1}`,
-    body: "This is a demo comment for the defense.",
+    guestName: commentNames[index % commentNames.length],
+    body: "כתבה מעניינת. אשמח לראות עדכון נוסף בנושא.",
     clientKeyHash: hashClientKey(`demo-comment-${index + 1}`)
   }));
   await Comment.insertMany(commentDocuments);
@@ -171,21 +320,24 @@ async function seed() {
     throw new Error("MongoDB connection failed. Check MONGODB_URI and try again.");
   }
 
-  // Create the three reporter accounts in parallel.
-  const reporters = await Promise.all([
-    getOrCreateUser("reporter.one", "Demo reporter 1", "reporter"),
-    getOrCreateUser("reporter.two", "Demo reporter 2", "reporter"),
-    getOrCreateUser("reporter.three", "Demo reporter 3", "reporter")
-  ]);
-  // Create the single editor account used by the review dashboard.
-  const editor = await getOrCreateUser("editor.one", "Demo editor", "editor");
+  // Remove placeholder accounts before creating the real team accounts.
+  await removeLegacyDemoUsers();
+
+  // Create the four reporter accounts in parallel.
+  const reporters = await Promise.all(
+    reporterAccounts.map(({ username, displayName }) => (
+      getOrCreateUser(username, displayName, "reporter")
+    ))
+  );
+  // Create the editor account used by the review dashboard.
+  const editor = await getOrCreateUser(editorAccount.username, editorAccount.displayName, "editor");
   // Seed articles first so comments and views have valid article references.
   const articles = await upsertDemoArticles(reporters, editor);
 
   // Rebuild the related comments and analytics timeline.
   await refreshDemoRelatedData(articles);
 
-  console.log(`Seed complete. Users: 4, articles: ${articles.length}, comments: 20, view timeline: ready.`);
+  console.log(`Seed complete. Users: 5, articles: ${articles.length}, comments: 20, view timeline: ready.`);
 }
 
 seed()

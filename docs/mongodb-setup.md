@@ -38,9 +38,10 @@ npm start
 
 The seed creates or updates:
 
-- four demo users: three reporters and one editor;
+- five team users: four reporters and one editor;
 - 500 marked demo articles in all four workflow states;
 - demo articles with published version numbers for update scenarios;
+- category-specific public photos and realistic newsroom display names;
 - 20 demo comments;
 - fourteen days of view events for published articles.
 
@@ -50,8 +51,8 @@ team articles or normal team comments.
 
 ## Demo accounts
 
-The usernames are `reporter.one`, `reporter.two`, `reporter.three`, and
-`editor.one`. All demo passwords use the local `SEED_PASSWORD` value.
+The team usernames are `upr256`, `ddd99913`, `lirishavit`, `shakedbremer`, and
+`haimatiya`. All demo passwords use the local `SEED_PASSWORD` value.
 
 The authentication feature must be connected before these accounts can log in.
 Do not use the demo password for a real account.
