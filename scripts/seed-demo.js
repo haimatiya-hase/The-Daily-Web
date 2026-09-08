@@ -22,7 +22,7 @@ const reporterAccounts = [
   { username: "lirishavit", displayName: "לירי שביט" },
   { username: "shakedbremer", displayName: "שקד ברמר" }
 ];
-const editorAccount = { username: "haimatiya", displayName: "חיים עטיה" };
+const editorAccount = { username: "haimatiya", displayName: "חיים אטייה" };
 
 // Use a small set of public photos and rotate them by category.
 const imageSets = {
