@@ -99,9 +99,11 @@ const articleSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
-// Add indexes for public feeds and editor filters.
-articleSchema.index({ status: 1, "publishedVersion.publishedAt": -1 });
-articleSchema.index({ "publishedVersion.category": 1 });
+// Cover public feed cursor queries for both supported sort modes.
+articleSchema.index({ "publishedVersion.publishedAt": -1, _id: -1 }); // Support newest-first public cursor pages.
+articleSchema.index({ "publishedVersion.category": 1, "publishedVersion.publishedAt": -1, _id: -1 }); // Support category plus date pages.
+articleSchema.index({ viewCount: -1, "publishedVersion.publishedAt": -1, _id: -1 }); // Support popularity cursor pages.
+articleSchema.index({ "publishedVersion.category": 1, viewCount: -1, "publishedVersion.publishedAt": -1, _id: -1 }); // Support category plus popularity pages.
 articleSchema.index({
   "publishedVersion.title": "text",
   "publishedVersion.summary": "text"

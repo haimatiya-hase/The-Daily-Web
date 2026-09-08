@@ -44,21 +44,32 @@
           <div class="eyebrow">LATEST STORIES</div>
           <h2>כתבות אחרונות</h2>
         </div>
-        <span class="status-pill status-live"><i></i> תשתית מוכנה</span>
+        <span class="status-pill status-live"><i></i><span id="feed-count">טוען כתבות...</span></span>
       </div>
 
+      <%# Keep every public feed control inside one AJAX form. %>
       <form class="filters-card" id="feed-filters" novalidate>
         <label>
           חיפוש
-          <input type="search" name="search" placeholder="חיפוש לפי כותרת..." autocomplete="off">
+          <input type="search" name="search" placeholder="חיפוש בכותרת ובתקציר..." maxlength="100" autocomplete="off">
         </label>
         <label>
           קטגוריה
           <select name="category">
             <option value="">כל הקטגוריות</option>
-            <option value="news">חדשות</option>
-            <option value="culture">תרבות</option>
-            <option value="sport">ספורט</option>
+            <option value="חדשות">חדשות</option>
+            <option value="כלכלה">כלכלה</option>
+            <option value="תרבות">תרבות</option>
+            <option value="ספורט">ספורט</option>
+            <option value="טכנולוגיה">טכנולוגיה</option>
+          </select>
+        </label>
+        <label>
+          מצב צפייה
+          <select name="viewStatus">
+            <option value="">הכול</option>
+            <option value="viewed">נצפו</option>
+            <option value="unviewed">טרם נצפו</option>
           </select>
         </label>
         <label>
@@ -68,17 +79,22 @@
             <option value="popularity">הפופולריות ביותר</option>
           </select>
         </label>
+        <div class="feed-filter-actions">
+          <button class="button button-primary" type="submit">חיפוש</button>
+          <button class="button button-secondary" id="feed-clear" type="button">ניקוי</button>
+        </div>
       </form>
 
-      <div class="feed" id="feed" aria-live="polite">
-        <article class="empty-state feed-empty">
-          <div class="empty-visual" aria-hidden="true"><span></span><span></span><span></span></div>
-          <div class="eyebrow">FEED PREVIEW</div>
-          <h3>הפיד מתעורר בקרוב</h3>
-          <p>תשתית החדשות מחוברת. החיפוש, הסינון, המיון והטעינה האינסופית יופעלו עם חיבור פיד הכתבות.</p>
-        </article>
+      <%# Let browser JavaScript insert only approved article cards here. %>
+      <div class="feed" id="feed" aria-live="polite" aria-busy="true"></div>
+      <%# Show accessible loading, retry, infinite-scroll, and final-page states. %>
+      <div class="loading-indicator" id="feed-loading" role="status">טוען כתבות...</div>
+      <div class="feed-retry" id="feed-retry" role="status" aria-live="polite" hidden>
+        <span id="feed-retry-message">לא הצלחנו לטעון את הכתבות.</span>
+        <button class="button button-secondary" id="feed-retry-button" type="button">נסו שוב</button>
       </div>
-      <div class="loading-indicator" id="feed-loading" hidden>טוען כתבות...</div>
+      <div class="feed-sentinel" id="feed-sentinel" aria-hidden="true"></div>
+      <p class="feed-end" id="feed-end" hidden>הגעתם לסוף הפיד.</p>
     </div>
 
     <aside class="sidebar" aria-label="סרגל צד">

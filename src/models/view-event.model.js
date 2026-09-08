@@ -40,5 +40,7 @@ const viewEventSchema = new mongoose.Schema({
 // Index the timeline query used by Impact Analytics.
 viewEventSchema.index({ article: 1, viewedAt: 1 });
 viewEventSchema.index({ article: 1, dayKey: 1 });
+// Find the unique articles viewed by one anonymous browser without scanning all events.
+viewEventSchema.index({ clientKeyHash: 1, article: 1 }, { sparse: true });
 
 module.exports = mongoose.model("ViewEvent", viewEventSchema);
