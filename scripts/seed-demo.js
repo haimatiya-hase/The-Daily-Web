@@ -14,6 +14,16 @@ const DEMO_KEY_PREFIX = "demo-article-";
 const categories = ["חדשות", "כלכלה", "תרבות", "ספורט", "טכנולוגיה"];
 const statuses = ["draft", "pending_review", "published", "changes_requested"];
 
+// Keep only the five real team accounts in the local demo database.
+const legacyDemoUsernames = ["reporter.one", "reporter.two", "reporter.three", "editor.one"];
+const reporterAccounts = [
+  { username: "upr256", displayName: "איתי" },
+  { username: "ddd99913", displayName: "דור" },
+  { username: "lirishavit", displayName: "לירי שביט" },
+  { username: "shakedbremer", displayName: "שקד ברמר" }
+];
+const editorAccount = { username: "haimatiya", displayName: "חיים עטיה" };
+
 // Use a small set of public photos and rotate them by category.
 const imageSets = {
   "חדשות": [
@@ -158,6 +168,11 @@ async function getOrCreateUser(username, displayName, role) {
     { username, displayName, role, passwordHash },
     { upsert: true, new: true, setDefaultsOnInsert: true }
   ).exec();
+}
+
+// Remove only the old placeholder accounts created by earlier seed versions.
+async function removeLegacyDemoUsers() {
+  await User.deleteMany({ username: { $in: legacyDemoUsernames } }).exec();
 }
 
 // Build one article version with clear content for the demo screen.
@@ -305,21 +320,24 @@ async function seed() {
     throw new Error("MongoDB connection failed. Check MONGODB_URI and try again.");
   }
 
-  // Create the three reporter accounts in parallel.
-  const reporters = await Promise.all([
-    getOrCreateUser("reporter.one", "יעל כהן", "reporter"),
-    getOrCreateUser("reporter.two", "נועם לוי", "reporter"),
-    getOrCreateUser("reporter.three", "מאיה שרון", "reporter")
-  ]);
-  // Create the single editor account used by the review dashboard.
-  const editor = await getOrCreateUser("editor.one", "דניאל מזרחי", "editor");
+  // Remove placeholder accounts before creating the real team accounts.
+  await removeLegacyDemoUsers();
+
+  // Create the four reporter accounts in parallel.
+  const reporters = await Promise.all(
+    reporterAccounts.map(({ username, displayName }) => (
+      getOrCreateUser(username, displayName, "reporter")
+    ))
+  );
+  // Create the editor account used by the review dashboard.
+  const editor = await getOrCreateUser(editorAccount.username, editorAccount.displayName, "editor");
   // Seed articles first so comments and views have valid article references.
   const articles = await upsertDemoArticles(reporters, editor);
 
   // Rebuild the related comments and analytics timeline.
   await refreshDemoRelatedData(articles);
 
-  console.log(`Seed complete. Users: 4, articles: ${articles.length}, comments: 20, view timeline: ready.`);
+  console.log(`Seed complete. Users: 5, articles: ${articles.length}, comments: 20, view timeline: ready.`);
 }
 
 seed()

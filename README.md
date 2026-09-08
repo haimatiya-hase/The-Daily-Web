@@ -181,7 +181,7 @@ npm start
 
 The seed creates or updates:
 
-- 3 demo reporters and 1 demo editor;
+- 4 team reporters and 1 team editor;
 - 500 marked demo articles in all workflow states;
 - published and working versions for update scenarios;
 - 20 demo comments;
@@ -191,13 +191,14 @@ The seeded stories use category-specific public photos and realistic newsroom
 display names, so the public feed looks closer to a real news product during
 the demo.
 
-Demo usernames:
+Team usernames:
 
 ```text
-reporter.one
-reporter.two
-reporter.three
-editor.one
+upr256
+ddd99913
+lirishavit
+shakedbremer
+haimatiya
 ```
 
 All demo accounts use the local `SEED_PASSWORD` value. Do not use this demo
