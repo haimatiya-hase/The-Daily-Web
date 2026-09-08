@@ -14,7 +14,6 @@
   const categorySelect = filters?.querySelector('select[name="category"]'); // Find the category filter.
   const viewStatusSelect = filters?.querySelector('select[name="viewStatus"]'); // Find the viewed-state filter.
   const sortSelect = filters?.querySelector('select[name="sort"]'); // Find the feed sort control.
-  const healthLink = document.querySelector('a[href="/api/health"]'); // Find the asynchronous server-status link.
   // Find the area that displays weather on the home page.
   const weatherContent = document.querySelector("#weather-content"); // Find the area that receives current weather.
   let nextCursor = null; // Store the cursor returned for the next feed page.
@@ -310,18 +309,6 @@
   retryButton?.addEventListener("click", () => { // Retry the exact page that failed.
     hasMoreArticles = true; // Allow the saved cursor to be requested again.
     loadFeed(); // Repeat the failed AJAX request.
-  });
-
-  // Check the server asynchronously from the browser.
-  healthLink?.addEventListener("click", async (event) => {
-    event.preventDefault();
-    try {
-      const response = await fetch("/api/health", { headers: { Accept: "application/json" } });
-      const health = await response.json();
-      window.alert(`שרת: ${health.ok ? "תקין" : "בעיה"}\nמסד נתונים: ${health.database}`);
-    } catch (error) {
-      window.alert("לא ניתן לקבל את מצב המערכת כרגע.");
-    }
   });
 
   // Load weather after the page controls are ready.

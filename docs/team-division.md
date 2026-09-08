@@ -86,10 +86,10 @@
 
 ## Branches לפי אזור
 
-- לירי: `feature/liri-auth-weather`
+- לירי: `feature/liri-login-auth-users-weather`
 - ברמר: `feature/bremer-home-feed`
 - דור: `feature/dor-reporter`
-- חיים: `feature/haim-editor`
+- חיים: `feature/haim-editor-area`
 - איתי: `feature/itay-article-analytics`
 
 כל חבר עובד ב-branch שלו. שינויים ב-files משותפים מתבצעים רק לאחר תיאום

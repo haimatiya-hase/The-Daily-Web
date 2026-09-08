@@ -241,8 +241,7 @@ public/
 ├── css/                      Responsive newsroom design
 └── js/                       Vanilla JavaScript and AJAX behavior
 scripts/                      Seed and syntax-check utilities
-test/                         Shared unit tests
-tests/                        Reporter controller tests
+test/                         Automated unit and workflow tests
 docs/                         Requirements, walkthroughs, and team process
 ```
 
@@ -252,10 +251,10 @@ Each student owns one product area from interface to database and tests.
 
 | Team member | End-to-end responsibility | Main branch |
 | --- | --- | --- |
-| Liri | Login/Auth, Users, Security, Weather | `feature/liri-auth-weather` |
+| Liri | Login/Auth, Users, Security, Weather | `feature/liri-login-auth-users-weather` |
 | Bremer | Home Feed, Search, Filter, Sort | `feature/bremer-home-feed` |
 | Dor | Reporter Area | `feature/dor-reporter` |
-| Haim | Editor Area and content management | `feature/haim-editor` |
+| Haim | Editor Area and content management | `feature/haim-editor-area` |
 | Itay | Article, Comments, Views, Analytics | `feature/itay-article-analytics` |
 
 ## Git workflow
