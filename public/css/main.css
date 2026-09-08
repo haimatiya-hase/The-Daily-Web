@@ -354,7 +354,7 @@ h2, h3 { line-height: 1.15; }
 .section-heading h2 { margin: 5px 0 0; color: var(--ink); font-size: 30px; letter-spacing: -0.05em; }
 
 /* Use a soft pill for statuses and counters. */
-.status-pill, .weather-placeholder, .project-index {
+.status-pill, .weather-placeholder {
   display: inline-flex;
   align-items: center;
   gap: 7px;
@@ -371,7 +371,7 @@ h2, h3 { line-height: 1.15; }
 .status-live { border-color: rgba(96, 245, 210, 0.3); color: var(--accent); background: rgba(96, 245, 210, 0.08); }
 
 /* Give every major surface a glass card treatment. */
-.filters-card, .form-card, .weather-card, .note-card, .empty-state {
+.filters-card, .form-card, .weather-card, .empty-state {
   border: 1px solid var(--line);
   border-radius: 20px;
   background: var(--card);
@@ -508,14 +508,14 @@ input:disabled, select:disabled, textarea:disabled { cursor: not-allowed; opacit
 /* Stack sidebar cards with equal spacing. */
 .sidebar { display: grid; align-content: start; gap: 18px; }
 
-/* Give sidebar cards comfortable inner spacing. */
-.weather-card, .note-card { padding: 24px; }
+/* Give the weather card comfortable inner spacing. */
+.weather-card { padding: 24px; }
 
 /* Align weather title and symbol. */
 .weather-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 
-/* Keep weather heading margins controlled. */
-.weather-card h2, .note-card h3 { margin: 7px 0 2px; color: var(--ink); }
+/* Keep the weather heading margins controlled. */
+.weather-card h2 { margin: 7px 0 2px; color: var(--ink); }
 
 /* Style the small city label. */
 .weather-heading p { margin: 0; color: var(--muted); font-size: 12px; }
@@ -523,23 +523,8 @@ input:disabled, select:disabled, textarea:disabled { cursor: not-allowed; opacit
 /* Add a soft visual weather symbol. */
 .weather-symbol { color: var(--accent); font-size: 43px; line-height: 1; text-shadow: 0 0 22px rgba(96, 245, 210, 0.3); }
 
-/* Keep sidebar descriptions secondary. */
-.weather-card p, .note-card p { color: var(--muted); font-size: 13px; }
-
-/* Keep the project status index compact. */
-.project-index { color: var(--accent); background: rgba(96, 245, 210, 0.08); }
-
-/* Show progress with a small glowing line. */
-.progress-line { height: 5px; margin: 22px 0 8px; overflow: hidden; border-radius: 99px; background: rgba(148, 171, 219, 0.13); }
-
-/* Mark the current foundation progress. */
-.progress-line span { display: block; width: 25%; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--accent-strong), var(--accent)); box-shadow: 0 0 14px rgba(96, 245, 210, 0.4); }
-
-/* Label the progress line in a restrained way. */
-.progress-label { display: flex; justify-content: space-between; color: var(--muted); font-size: 9px; font-weight: 800; letter-spacing: 0.1em; }
-
-/* Keep the health link bright enough to discover. */
-.note-card a { display: inline-block; margin-top: 20px; color: var(--accent); font-size: 12px; font-weight: 800; text-decoration: none; }
+/* Keep the weather description secondary. */
+.weather-card p { color: var(--muted); font-size: 13px; }
 
 /* Align the live weather response inside its card. */
 .weather-content { display: flex; align-items: center; gap: 12px; min-height: 58px; }
@@ -825,10 +810,10 @@ code { padding: 3px 7px; border-radius: 6px; color: var(--accent); background: r
 .editor-message.is-success { color: var(--success); }
 
 /* Dim read-only editor forms. */
-.editor-form-card.is-readonly { opacity: 0.82; }
+#editor-form-card.is-readonly { opacity: 0.82; }
 
 /* Make disabled editor fields visibly inactive. */
-.editor-form-card.is-readonly input:disabled, .editor-form-card.is-readonly textarea:disabled { color: var(--muted); background: rgba(148, 171, 219, 0.06); }
+#editor-form-card.is-readonly input:disabled, #editor-form-card.is-readonly textarea:disabled { color: var(--muted); background: rgba(148, 171, 219, 0.06); }
 
 /* Compare public and working versions side by side. */
 .editor-compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
