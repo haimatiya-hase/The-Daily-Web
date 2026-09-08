@@ -41,6 +41,7 @@ The seed creates or updates:
 - four demo users: three reporters and one editor;
 - 500 marked demo articles in all four workflow states;
 - demo articles with published version numbers for update scenarios;
+- category-specific public photos and realistic newsroom display names;
 - 20 demo comments;
 - fourteen days of view events for published articles.
 

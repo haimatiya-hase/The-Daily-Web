@@ -187,6 +187,10 @@ The seed creates or updates:
 - 20 demo comments;
 - 14 days of view events for analytics testing.
 
+The seeded stories use category-specific public photos and realistic newsroom
+display names, so the public feed looks closer to a real news product during
+the demo.
+
 Demo usernames:
 
 ```text
