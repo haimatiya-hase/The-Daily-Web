@@ -886,3 +886,51 @@ code { padding: 3px 7px; border-radius: 6px; color: var(--accent); background: r
   html { scroll-behavior: auto; }
   *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
 }
+
+/* Open the article body with an emphasized approved summary. */
+.article-summary { margin: 0 0 22px; color: var(--ink); font-size: 21px; font-weight: 600; line-height: 1.6; }
+
+/* Space server-rendered article paragraphs evenly. */
+.article-content p { margin: 0 0 18px; }
+
+/* Stack the guest comment form fields with comfortable spacing. */
+.comment-form { display: grid; gap: 14px; max-width: 640px; margin: 22px 0 34px; }
+
+/* Keep comment form labels quiet but readable. */
+.comment-form label { display: grid; gap: 6px; color: var(--muted-strong); font-size: 13px; font-weight: 700; }
+
+/* Align the send button with its feedback message. */
+.comment-form-footer { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+
+/* Reserve space for comment feedback without layout jumps. */
+.comment-message { min-height: 20px; margin: 0; font-size: 13px; font-weight: 700; }
+
+/* Color successful comment feedback. */
+.comment-message.is-success { color: var(--success); }
+
+/* Color validation and rate-limit feedback. */
+.comment-message.is-error { color: var(--danger); }
+
+/* Stack reader comments as separate cards. */
+.comments-list { display: grid; gap: 14px; }
+
+/* Present one reader comment as a quiet glass card. */
+.comment-item { padding: 16px 18px; border: 1px solid var(--line); border-radius: 14px; background: var(--card); }
+
+/* Separate the commenter identity from the comment text. */
+.comment-item-header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 6px; }
+
+/* Keep the commenter name readable on the dark card. */
+.comment-item-header strong { color: var(--ink); }
+
+/* Keep the comment time small and quiet. */
+.comment-item-header time { color: var(--muted); font-size: 11px; }
+
+/* Keep the comment text comfortable to read. */
+.comment-item p { margin: 0; color: var(--muted-strong); white-space: pre-wrap; overflow-wrap: anywhere; }
+
+/* Let the analytics chart shrink with the editor column. */
+.editor-analytics canvas { display: block; width: 100%; height: auto; margin-top: 8px; }
+
+/* Keep the chart legend on one quiet line. */
+.analytics-legend { margin-top: 10px; }

@@ -1,30 +1,63 @@
 <%- include("../partials/head", { pageTitle }) %> <%# Start the shared HTML document and page metadata. %>
 <%- include("../partials/header", { activePage }) %> <%# Show the shared navigation and session actions. %>
 
-<main class="container page-shell"> <%# Hold either the article content or the route placeholder. %>
-  <% if (article) { %> <%# Render the full article when a controller supplies public data. %>
-    <article class="article-page"> <%# Keep the article fields inside one semantic HTML element. %>
-      <div class="eyebrow"><%= article.category %></div> <%# Show the article category above the title. %>
-      <h1><%= article.title %></h1> <%# Show the escaped public headline. %>
-      <p class="article-meta">מאת <%= article.author.displayName %> · <%= article.publishedAt %></p> <%# Show the public author and publication date. %>
-      <img class="article-image" src="<%= article.imageUrl %>" alt=""> <%# Load the approved article image. %>
-      <div class="article-content"><%- article.content %></div> <%# Insert trusted article content for the finished article page. %>
-      <section class="comments-section" aria-labelledby="comments-title"> <%# Reserve an accessible area for reader comments. %>
-        <h2 id="comments-title">תגובות</h2> <%# Label the comments area. %>
-        <div id="comments-list"></div> <%# Give JavaScript a place to render comments later. %>
-        <form id="comment-form"></form> <%# Keep the comment form hook ready for the next feature. %>
-      </section>
-    </article>
-  <% } else { %>
-    <section class="empty-state large-empty"> <%# Explain the current scaffold when article data is not connected yet. %>
-      <div class="eyebrow">ARTICLE ROUTE READY</div> <%# Mark the route as available for the next integration. %>
-      <h1>עמוד הכתבה הוכן לחיבור לנתונים</h1> <%# Tell the user why the full article is not shown yet. %>
-      <p>מזהה הכתבה: <code><%= articleId %></code></p> <%# Show the requested article identifier safely. %>
-      <p>התוכן המלא יוחזר בהמשך כבר ב-HTML הראשוני לצורך נגישות ו-SEO.</p> <%# Explain the planned server-rendered article behavior. %>
-      <a class="button button-primary" href="/">חזרה לעמוד הבית</a> <%# Offer a clear way back to the public home page. %>
+<main class="container page-shell"> <%# Hold the server-rendered public article. %>
+  <article class="article-page" id="article-page"
+    data-article-id="<%= article.id %>"
+    data-publication-version="<%= article.publicationVersion %>"> <%# Give the browser script the identifiers used by the comment and view APIs. %>
+    <div class="eyebrow"><%= article.category %></div> <%# Show the approved category above the title. %>
+    <h1><%= article.title %></h1> <%# Show the escaped public headline. %>
+    <p class="article-meta"> <%# Show the public author and publication date. %>
+      מאת <%= article.authorName %>
+      · <time datetime="<%= new Date(article.publishedAt).toISOString() %>"><%= article.publishedAtText %></time> <%# Use a semantic time element for search engines. %>
+    </p>
+    <% if (article.imageUrl) { %> <%# Show the main image only when the approved version provides one. %>
+      <img class="article-image" src="<%= article.imageUrl %>" alt="תמונה ראשית של הכתבה: <%= article.title %>">
+    <% } %>
+    <% if (article.summary) { %> <%# Open the article with the approved summary. %>
+      <p class="article-summary"><%= article.summary %></p>
+    <% } %>
+    <div class="article-content"> <%# Render the full approved content in the initial HTML for SEO. %>
+      <% for (const paragraph of article.paragraphs) { %> <%# Escape every stored paragraph separately. %>
+        <p><%= paragraph %></p>
+      <% } %>
+    </div>
+
+    <section class="comments-section" aria-labelledby="comments-title"> <%# Hold the reader comments and the AJAX form. %>
+      <h2 id="comments-title">תגובות (<span id="comments-count"><%= comments.length %></span>)</h2> <%# Label the area with a live comment counter. %>
+
+      <form id="comment-form" class="comment-form" novalidate> <%# Send new comments through JavaScript without a page reload. %>
+        <label> <%# Label the guest name input. %>
+          שם
+          <input id="comment-name" name="guestName" type="text" maxlength="80" required placeholder="איך לקרוא לך?">
+        </label>
+        <label> <%# Label the comment text input. %>
+          תגובה
+          <textarea id="comment-body" name="body" maxlength="2000" rows="4" required placeholder="מה דעתך על הכתבה?"></textarea>
+        </label>
+        <div class="comment-form-footer"> <%# Keep the button and feedback message on one row. %>
+          <button class="button button-primary" id="comment-submit" type="submit">שליחת תגובה</button>
+          <p class="comment-message" id="comment-message" role="status" aria-live="polite"></p> <%# Announce success, validation, and rate-limit messages. %>
+        </div>
+      </form>
+
+      <div id="comments-list" class="comments-list"> <%# Render existing comments on the server and receive new ones from JavaScript. %>
+        <% if (comments.length === 0) { %> <%# Show a friendly empty state until the first comment arrives. %>
+          <p class="form-note" id="comments-empty">אין תגובות עדיין. אפשר להיות הראשונים להגיב.</p>
+        <% } %>
+        <% for (const comment of comments) { %> <%# Render each visible comment already in the first HTML response. %>
+          <article class="comment-item">
+            <header class="comment-item-header"> <%# Show who commented and when. %>
+              <strong><%= comment.guestName %></strong>
+              <time datetime="<%= new Date(comment.createdAt).toISOString() %>"><%= comment.createdAtText %></time>
+            </header>
+            <p><%= comment.body %></p> <%# Escape the guest text so it can never run as HTML. %>
+          </article>
+        <% } %>
+      </div>
     </section>
-  <% } %>
+  </article>
 </main>
 
-<script src="/js/article.js" defer></script> <%# Load comment-page behavior after HTML parsing. %>
+<script src="/js/article.js" defer></script> <%# Load the view beacon and AJAX comment behavior after parsing. %>
 <%- include("../partials/footer") %> <%# Close the shared HTML document. %>
