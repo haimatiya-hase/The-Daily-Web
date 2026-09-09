@@ -85,6 +85,20 @@ const articleSchema = new mongoose.Schema({
   reviewedAt: {
     type: Date
   },
+  // Remember every approved publication so Impact Analytics can mark update points on the views graph.
+  publicationHistory: {
+    type: [
+      new mongoose.Schema({
+        // Store the public version number that this approval created.
+        versionNumber: { type: Number, required: true, min: 1 },
+        // Store the exact moment when the version became visible to readers.
+        publishedAt: { type: Date, required: true },
+        // Link the approval to the editor who published the version.
+        approvedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" }
+      }, { _id: false })
+    ],
+    default: []
+  },
   // Count internal revisions without changing publication versions.
   revisionNumber: {
     type: Number,
