@@ -30,11 +30,10 @@ JavaScript with AJAX. No frontend framework is required.
 | Editor control room | Search, review, edit, publish, request changes, delete | ✅ |
 | Weather widget | Server-side weather request with a 15-minute cache | ✅ |
 | Public home feed | Published articles, search, filters, sort, infinite scroll | ✅ |
-| Article experience | Full article page, comments, view events, Impact Analytics | 🚧 |
+| Article experience | Full article page, comments, view events, Impact Analytics | ✅ |
 
-> **Current checkpoint:** authentication, Reporter, Editor, weather, and the
-> public home feed are implemented. The public article, comments, and analytics
-> area remains in its team branch.
+> **Current checkpoint:** all core areas are implemented, including the public
+> article page, guest comments, view statistics, and the Impact Analytics graph.
 
 ## Editorial workflow
 
@@ -123,10 +122,14 @@ an updated article is being reviewed.
 - Empty, loading, final-page, and retry states remain usable without a reload.
 - Weather widget connected through a small server-side API response.
 
-### Public article foundation
+### Public article page, comments, and analytics
 
-- Article and comment models prepared for the public reading experience.
-- View-event model and analytics service prepared for Impact Analytics.
+- Server-rendered article page: the full approved content is in the initial HTML.
+- Guest comments are added through AJAX and appear immediately without a reload.
+- The server blocks a fourth comment within one minute from the same device (429).
+- Every article visit stores one view event and atomically increments the counter.
+- The editor Impact Analytics panel draws daily views on a canvas chart and marks
+  every point where an editor approved and published a version.
 
 ## Quick start
 

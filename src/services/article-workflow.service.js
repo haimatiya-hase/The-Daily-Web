@@ -129,6 +129,11 @@ function approveArticle(article, editorId, now = new Date()) {
 
   // Replace the public copy only after the editor approves it.
   article.publishedVersion = publishedVersion;
+  // Append one history record so the Impact Analytics graph can mark this publication point.
+  article.publicationHistory = [
+    ...(article.publicationHistory || []),
+    { versionNumber: publishedVersion.versionNumber, publishedAt: now, approvedBy: editorId }
+  ];
   article.status = ARTICLE_STATUSES.PUBLISHED;
   article.editorNote = "";
   article.reviewedBy = editorId;

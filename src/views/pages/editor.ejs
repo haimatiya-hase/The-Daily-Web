@@ -108,10 +108,25 @@
           </article>
         </div>
       </section>
+
+      <section class="form-card editor-analytics" aria-labelledby="analytics-title"> <%# Show the Impact Analytics views graph of the selected article. %>
+        <div class="section-heading"> <%# Label the analytics area. %>
+          <div>
+            <div class="eyebrow">IMPACT ANALYTICS</div>
+            <h2 id="analytics-title">צפיות לאורך זמן</h2>
+          </div>
+          <span class="status-pill" id="analytics-total">0 צפיות</span> <%# Show the total view counter of the selected article. %>
+        </div>
+        <p class="form-note" id="analytics-status">בחרו כתבה כדי לראות את גרף הצפיות ואת נקודות פרסום העדכונים.</p> <%# Explain the panel before a selection is made. %>
+        <canvas id="analytics-chart" width="920" height="340" hidden role="img" aria-label="גרף צפיות לאורך זמן עם סימון פרסומי עדכונים"></canvas> <%# Draw the timeline with plain canvas as allowed by the assignment. %>
+        <p class="form-note analytics-legend" id="analytics-legend" hidden>— קו הצפיות היומי · | קו אנכי מסמן אישור ופרסום גרסה</p> <%# Explain how to read the chart markers. %>
+      </section>
     </section>
   </section>
 </main>
 
 <!-- Load editor actions after the page structure is ready. -->
 <script src="/js/editor.js" defer></script>
+<!-- Load the Impact Analytics chart after the editor actions. -->
+<script src="/js/analytics.js" defer></script>
 <%- include("../partials/footer") %> <%# Close the shared HTML document. %>

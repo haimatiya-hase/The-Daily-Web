@@ -3,6 +3,7 @@ const express = require("express");
 const { getDatabaseStatus } = require("../config/database");
 const homeController = require("../controllers/home.controller"); // Load the public feed action.
 const reporterController = require("../controllers/reporter.controller"); // Load the reporter REST actions.
+const articleController = require("../controllers/article.controller"); // Load the public article page REST actions.
 const { requireRole } = require("../middleware/auth.middleware"); // Load server-side role protection.
 // Load the cached weather service used by the home page widget.
 const { getWeather } = require("../services/weather.service");
@@ -21,6 +22,10 @@ router.get("/health", (req, res) => {
 });
 
 router.get("/articles", homeController.getPublicFeed); // Return one efficient cursor page of published articles.
+
+router.get("/articles/:articleId/comments", articleController.listComments); // Return the visible comments of one public article.
+router.post("/articles/:articleId/comments", articleController.createComment); // Add one rate-limited guest comment through AJAX.
+router.post("/articles/:articleId/views", articleController.recordView); // Count one article visit for the view statistics.
 
 router.get("/reporter/articles", requireRole("reporter"), reporterController.listReporterArticles); // List only the logged-in reporter's articles.
 router.post("/reporter/articles", requireRole("reporter"), reporterController.createReporterArticle); // Create a new draft for the logged-in reporter.

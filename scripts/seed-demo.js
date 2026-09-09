@@ -210,8 +210,23 @@ async function upsertDemoArticles(reporters, editor) {
     const hasPublishedVersion = status === "published";
     const versionNumber = hasPublishedVersion && index % 5 === 0 ? 2 : 1;
     const publishedAt = hasPublishedVersion
-      ? new Date(Date.now() - index * 60 * 60 * 1000)
+      ? versionNumber > 1
+        ? new Date(Date.now() - 7 * 24 * 60 * 60 * 1000 - index * 60 * 1000) // Place updates one week back so the graph shows views before and after the update point.
+        : new Date(Date.now() - index * 60 * 60 * 1000)
       : null;
+    // Give updated articles an earlier first publication for the analytics markers.
+    const firstPublishedAt = versionNumber > 1
+      ? new Date(Date.now() - 14 * 24 * 60 * 60 * 1000 - index * 60 * 1000)
+      : publishedAt;
+    // Record every approval point so the Impact Analytics graph can mark it.
+    const publicationHistory = hasPublishedVersion
+      ? versionNumber > 1
+        ? [
+          { versionNumber: 1, publishedAt: firstPublishedAt, approvedBy: editor._id },
+          { versionNumber: 2, publishedAt, approvedBy: editor._id }
+        ]
+        : [{ versionNumber: 1, publishedAt, approvedBy: editor._id }]
+      : [];
 
     // Keep the working copy and public copy separate in the seed data.
     const workingVersion = buildSnapshot(index, category, versionNumber);
@@ -233,6 +248,7 @@ async function upsertDemoArticles(reporters, editor) {
             editorNote: status === "changes_requested"
               ? "Please add a source and clarify the second paragraph."
               : "",
+            publicationHistory,
             revisionNumber: versionNumber,
             viewCount: hasPublishedVersion ? index * 7 : 0
           }
@@ -276,7 +292,7 @@ async function refreshDemoRelatedData(articles) {
     .slice(0, 12);
   const viewEvents = [];
 
-  for (const article of publishedArticles) {
+  for (const [articleIndex, article] of publishedArticles.entries()) {
     // Use the approved version when attaching views to each demo article.
     const finalVersion = Number(article.publishedVersion.versionNumber) || 1;
 
@@ -284,9 +300,11 @@ async function refreshDemoRelatedData(articles) {
       // Create one event day at a time for the analytics timeline.
       const viewedAt = new Date(Date.now() - day * 24 * 60 * 60 * 1000);
       const publicationVersion = finalVersion > 1 && day >= 7 ? 1 : finalVersion;
+      // Vary the daily totals and add a clear uplift after an approved update.
+      const dailyViews = 2 + ((day + articleIndex) % 4) + (finalVersion > 1 && day < 7 ? 4 : 0);
 
-      for (let count = 0; count < 3; count += 1) {
-        // Add three anonymous sample views for this article and day.
+      for (let count = 0; count < dailyViews; count += 1) {
+        // Add several anonymous sample views for this article and day.
         // Use a stable hash so the seeded client identifier is not stored openly.
         const clientKey = `demo-view-${article._id}-${day}-${count}`;
         viewEvents.push({
@@ -301,6 +319,18 @@ async function refreshDemoRelatedData(articles) {
   }
 
   await ViewEvent.insertMany(viewEvents);
+
+  // Keep each article popularity counter equal to its seeded view events.
+  const viewTotals = new Map();
+  for (const event of viewEvents) {
+    // Count the events that belong to each demo article.
+    const key = String(event.article);
+    viewTotals.set(key, (viewTotals.get(key) || 0) + 1);
+  }
+  await Promise.all(
+    // Update only the articles that received seeded events.
+    [...viewTotals].map(([articleId, total]) => Article.updateOne({ _id: articleId }, { $set: { viewCount: total } }))
+  );
 }
 
 // Seed users, articles, comments, and views for the whole team.
