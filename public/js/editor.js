@@ -215,6 +215,8 @@
     // Update inputs, buttons, and version cards for the new workflow state.
     setEditorMode(status);
     renderVersionComparison(article);
+    // Tell the separate Impact Analytics panel which article is open.
+    document.dispatchEvent(new CustomEvent("editor:article-selected", { detail: { articleId: article._id } }));
 
     // Highlight the selected queue row after the new article is loaded.
     for (const item of elements.list.querySelectorAll(".editor-article-item")) {
