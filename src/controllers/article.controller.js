@@ -2,9 +2,11 @@
 const mongoose = require("mongoose");
 const Article = require("../models/article.model");
 const HttpError = require("../utils/http-error");
-const { readClientKey } = require("../utils/client-key");
+const logger = require("../utils/logger");
+const { ensureDeviceKey } = require("../utils/client-key");
 const commentService = require("../services/comment.service");
-const { recordArticleView, getArticleDailyViews } = require("../services/analytics.service");
+const { recordArticleView } = require("../services/view.service");
+const { getArticleDailyViews } = require("../services/analytics.service");
 
 // Reuse one Hebrew date formatter for article metadata.
 const publishedDateFormat = new Intl.DateTimeFormat("he-IL", { dateStyle: "long" });
@@ -52,6 +54,20 @@ const showArticle = async (req, res, next) => {
     // Use only the approved public version for every rendered field.
     const published = article.publishedVersion;
 
+    // Count this entry on the server so every visit is recorded even without browser JavaScript.
+    try {
+      await recordArticleView({
+        articleId: article._id,
+        publicationVersion: Number(published.versionNumber) || 1,
+        // Identify the device with a first-party cookie that is created on the first visit.
+        clientKey: ensureDeviceKey(req, res),
+        userAgent: req.get("User-Agent")
+      });
+    } catch (error) {
+      // Never fail the article page because statistics could not be written.
+      logger.warn("Article view was not recorded", { articleId: String(article._id), message: error.message });
+    }
+
     // Render the complete article so search engines do not depend on browser JavaScript.
     res.render("pages/article", {
       // Use the approved headline as the browser tab title.
@@ -88,31 +104,6 @@ const showArticle = async (req, res, next) => {
     });
   } catch (error) {
     // Let the shared middleware render the safe error page.
-    next(error);
-  }
-};
-
-// Record one article visit for the view statistics.
-const recordView = async (req, res, next) => {
-  try {
-    // Read only the version number needed to label the view event.
-    const article = await findPublishedArticle(req.params.articleId, "publishedVersion.versionNumber");
-
-    // Refuse to count views for articles that are not public.
-    if (!article) {
-      throw new HttpError(404, "הכתבה לא נמצאה.");
-    }
-
-    // Store the event and update the popularity counter through the analytics service.
-    await recordArticleView({
-      articleId: article._id,
-      publicationVersion: Number(article.publishedVersion?.versionNumber) || 1,
-      clientKey: readClientKey(req)
-    });
-
-    // Return an empty success because the beacon needs no response body.
-    res.status(204).end();
-  } catch (error) {
     next(error);
   }
 };
@@ -158,4 +149,4 @@ const getArticleAnalytics = async (req, res, next) => {
   }
 };
 
-module.exports = { showArticle, recordView, getArticleAnalytics };
+module.exports = { showArticle, getArticleAnalytics };

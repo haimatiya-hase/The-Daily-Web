@@ -26,7 +26,6 @@ router.get("/articles", homeController.getPublicFeed); // Return one efficient c
 
 router.get("/articles/:articleId/comments", commentController.listComments); // Return one cursor page of visible comments for a public article.
 router.post("/articles/:articleId/comments", commentController.createComment); // Add one rate-limited guest comment through AJAX.
-router.post("/articles/:articleId/views", articleController.recordView); // Count one article visit for the view statistics.
 
 router.get("/reporter/articles", requireRole("reporter"), reporterController.listReporterArticles); // List only the logged-in reporter's articles.
 router.post("/reporter/articles", requireRole("reporter"), reporterController.createReporterArticle); // Create a new draft for the logged-in reporter.

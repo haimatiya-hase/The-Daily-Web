@@ -1,70 +1,48 @@
-// Load Mongoose, the view event and article models, and the shared hash helper.
+// Load Mongoose and the hourly bucket model that every chart reads from.
 const mongoose = require("mongoose");
-const ViewEvent = require("../models/view-event.model");
-const Article = require("../models/article.model");
-const { hashClientKey } = require("../utils/client-key");
+const ViewStat = require("../models/view-stat.model");
+const { createDayKey } = require("./view.service");
 
-// Create a stable day key for grouped analytics.
-const createDayKey = (date = new Date()) => {
-  // Keep only the UTC date so events can be grouped by day.
-  return date.toISOString().slice(0, 10);
-};
-
-// Record one article view for later aggregation.
-const recordArticleView = async ({ articleId, publicationVersion, clientKey }) => {
-  // Run both cheap writes together so thousands of parallel readers stay fast.
-  const [viewEvent] = await Promise.all([
-    // Store a small append-only event that the timeline aggregation reads later.
-    ViewEvent.create({
-      article: articleId,
-      publicationVersion,
-      dayKey: createDayKey(),
-      viewedAt: new Date(),
-      clientKeyHash: hashClientKey(clientKey)
-    }),
-    // Keep the article popularity counter correct with one atomic increment.
-    Article.updateOne({ _id: articleId }, { $inc: { viewCount: 1 } })
-  ]);
-
-  return viewEvent;
-};
-
-// Return daily views grouped by publication version.
-const getArticleTimeline = async (articleId) => {
+// Return the hourly buckets of one article, optionally limited to a time window.
+const getArticleHourlyBuckets = async (articleId, { from, to } = {}) => {
   // Avoid an invalid ObjectId exception when the URL contains bad input.
   if (!mongoose.isValidObjectId(articleId)) {
     return [];
   }
 
-  // Group events by day and publication version for the analytics chart.
-  return ViewEvent.aggregate([
-    { $match: { article: new mongoose.Types.ObjectId(articleId) } },
-    {
-      $group: {
-        _id: { day: "$dayKey", publicationVersion: "$publicationVersion" },
-        views: { $sum: 1 }
-      }
-    },
-    { $sort: { "_id.day": 1 } }
-  ]);
+  const filter = { article: new mongoose.Types.ObjectId(String(articleId)) };
+  // Narrow the range only when the caller asks for it.
+  if (from || to) {
+    filter.bucketStart = {};
+    if (from) filter.bucketStart.$gte = from;
+    if (to) filter.bucketStart.$lte = to;
+  }
+
+  // Read the small pre-aggregated documents instead of scanning raw events.
+  const buckets = await ViewStat.find(filter)
+    .select("bucketStart views byVersion")
+    .sort({ bucketStart: 1 })
+    .lean();
+
+  return buckets.map((bucket) => ({
+    start: bucket.bucketStart,
+    views: bucket.views,
+    byVersion: bucket.byVersion || {}
+  }));
 };
 
 // Return total views per day so the Impact Analytics graph can draw one clear line.
 const getArticleDailyViews = async (articleId) => {
-  // Avoid an invalid ObjectId exception when the URL contains bad input.
-  if (!mongoose.isValidObjectId(articleId)) {
-    return [];
+  const buckets = await getArticleHourlyBuckets(articleId);
+  const days = new Map();
+
+  // Fold the hourly buckets into days while keeping the ascending order.
+  for (const bucket of buckets) {
+    const day = createDayKey(new Date(bucket.start));
+    days.set(day, (days.get(day) || 0) + bucket.views);
   }
 
-  // Group the small pre-indexed events instead of scanning raw request logs.
-  const groups = await ViewEvent.aggregate([
-    { $match: { article: new mongoose.Types.ObjectId(articleId) } },
-    { $group: { _id: "$dayKey", views: { $sum: 1 } } },
-    { $sort: { _id: 1 } }
-  ]);
-
-  // Flatten the aggregation shape into simple chart-ready points.
-  return groups.map((group) => ({ day: group._id, views: group.views }));
+  return [...days].map(([day, views]) => ({ day, views }));
 };
 
-module.exports = { recordArticleView, getArticleTimeline, getArticleDailyViews, createDayKey, hashClientKey };
+module.exports = { getArticleHourlyBuckets, getArticleDailyViews, createDayKey };
