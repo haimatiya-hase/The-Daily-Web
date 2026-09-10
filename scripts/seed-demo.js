@@ -210,23 +210,24 @@ async function upsertDemoArticles(reporters, editor) {
     const category = categories[offset % categories.length];
     const author = reporters[offset % reporters.length];
     const hasPublishedVersion = status === "published";
-    const versionNumber = hasPublishedVersion && index % 5 === 0 ? 2 : 1;
+    // Give every fifteenth published article two updates and every fifth one update, so the graph shows several markers.
+    const versionNumber = hasPublishedVersion ? (index % 15 === 0 ? 3 : index % 5 === 0 ? 2 : 1) : 1;
+    const DAY = 24 * 60 * 60 * 1000;
+    // Place the first publication two weeks back, the first update one week back, and the second update two days back.
+    const publicationTimes = [
+      new Date(Date.now() - 14 * DAY - index * 60 * 1000),
+      new Date(Date.now() - 7 * DAY - index * 60 * 1000),
+      new Date(Date.now() - 2 * DAY - index * 60 * 1000)
+    ];
     const publishedAt = hasPublishedVersion
       ? versionNumber > 1
-        ? new Date(Date.now() - 7 * 24 * 60 * 60 * 1000 - index * 60 * 1000) // Place updates one week back so the graph shows views before and after the update point.
+        ? publicationTimes[versionNumber - 1] // The public version is the latest approved update.
         : new Date(Date.now() - index * 60 * 60 * 1000)
       : null;
-    // Give updated articles an earlier first publication for the analytics markers.
-    const firstPublishedAt = versionNumber > 1
-      ? new Date(Date.now() - 14 * 24 * 60 * 60 * 1000 - index * 60 * 1000)
-      : publishedAt;
     // Record every approval point so the Impact Analytics graph can mark it.
     const publicationHistory = hasPublishedVersion
       ? versionNumber > 1
-        ? [
-          { versionNumber: 1, publishedAt: firstPublishedAt, approvedBy: editor._id },
-          { versionNumber: 2, publishedAt, approvedBy: editor._id }
-        ]
+        ? publicationTimes.slice(0, versionNumber).map((time, position) => ({ versionNumber: position + 1, publishedAt: time, approvedBy: editor._id }))
         : [{ versionNumber: 1, publishedAt, approvedBy: editor._id }]
       : [];
 
@@ -332,15 +333,17 @@ async function refreshDemoRelatedData(articles) {
   for (const [articleIndex, article] of publishedArticles.entries()) {
     // Use the approved version when attaching views to each demo article.
     const finalVersion = Number(article.publishedVersion.versionNumber) || 1;
-    // Give the first twelve articles dense traffic and the rest a light background so popularity has real data.
-    const isDense = articleIndex < 12;
+    // Give the first twelve articles and every updated article dense traffic, and the rest a light background.
+    const isDense = articleIndex < 12 || finalVersion > 1;
 
     for (let day = 0; day < 30; day += 1) {
-      // Views before the update belong to the previous version; the demo updates were published seven days ago.
-      const publicationVersion = finalVersion > 1 && day >= 7 ? 1 : finalVersion;
-      // Vary the daily totals and add a clear uplift after an approved update.
+      // Match the version to the publication times: updates went live seven days ago and two days ago.
+      const publicationVersion = finalVersion === 3
+        ? (day >= 7 ? 1 : day >= 2 ? 2 : 3)
+        : (finalVersion > 1 && day >= 7 ? 1 : finalVersion);
+      // Vary the daily totals and add a clear uplift after every approved update.
       const dailyViews = isDense
-        ? 2 + ((day + articleIndex) % 4) + (finalVersion > 1 && day < 7 ? 4 : 0)
+        ? 2 + ((day + articleIndex) % 4) + (finalVersion > 1 && day < 7 ? 4 : 0) + (finalVersion === 3 && day < 2 ? 3 : 0)
         : (day * 7 + articleIndex) % 3;
 
       for (let count = 0; count < dailyViews; count += 1) {

@@ -7,8 +7,8 @@ const HttpError = require("../utils/http-error");
 const logger = require("../utils/logger");
 const { hashClientKey } = require("../utils/client-key");
 
-// Keep the editor statistics list at a readable page size.
-const STATS_PAGE_SIZE = 20;
+// Keep the statistics list short so the sidebar stays level with the details and the chart beside it.
+const STATS_PAGE_SIZE = 8;
 // Accept only the sort orders offered by the statistics screen.
 const STATS_SORTS = Object.freeze(["total", "newest"]);
 // Recognize common crawlers and tools so they do not inflate reader statistics.
@@ -43,8 +43,9 @@ const requireArticleObjectId = (articleId) => {
 
 // Record one article view with three small writes that stay fast under heavy traffic.
 const recordArticleView = async ({ articleId, publicationVersion, clientKey, userAgent, viewedAt = new Date() }) => {
-  // Skip crawlers so statistics describe readers rather than search engines.
+  // Skip crawlers so statistics describe readers rather than search engines, and say so in the log so a skipped view is never silent.
   if (isBotUserAgent(userAgent)) {
+    logger.info("Article view skipped for crawler", { articleId: String(articleId), userAgent: String(userAgent || "").slice(0, 200) });
     return { recorded: false, reason: "bot" };
   }
 

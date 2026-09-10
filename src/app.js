@@ -6,6 +6,7 @@ const apiRoutes = require("./routes/api.routes");
 const editorRoutes = require("./routes/editor.routes");
 const uploadRoutes = require("./routes/upload.routes");
 const viewRoutes = require("./routes/view.routes");
+const analyticsRoutes = require("./routes/analytics.routes");
 const commentRoutes = require("./routes/comment.routes");
 const logger = require("./utils/logger");
 const { notFoundHandler, errorHandler } = require("./middleware/error.middleware");
@@ -26,8 +27,16 @@ function createApp() {
   app.use(express.urlencoded({ extended: false }));
   // Serve CSS, JavaScript, and local images.
   app.use(express.static(path.join(__dirname, "../public")));
+  // Serve the Chart.js build from node_modules so the editor graph works offline without a CDN.
+  app.use("/vendor/chart.js", express.static(path.join(__dirname, "../node_modules/chart.js/dist")));
   // Restore the connected user before views and protected routes use req.user.
   app.use(loadSessionUser);
+
+  // Never let browsers reuse API responses from their cache; counters and queues must always be fetched fresh.
+  app.use("/api", (req, res, next) => {
+    res.set("Cache-Control", "no-store");
+    next();
+  });
 
   // Set values that every EJS page can use.
   app.use((req, res, next) => {
@@ -62,6 +71,8 @@ function createApp() {
   app.use("/api/uploads", uploadRoutes);
   // Mount view statistics routes owned by the article area.
   app.use("/api/views", viewRoutes);
+  // Mount the Impact Analytics route owned by the article area.
+  app.use("/api/analytics", analyticsRoutes);
   // Mount comment moderation routes owned by the article area.
   app.use("/api/comments", commentRoutes);
   // Mount general JSON routes such as health, weather, and reporter actions.

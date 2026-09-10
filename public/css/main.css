@@ -932,8 +932,8 @@ code { padding: 3px 7px; border-radius: 6px; color: var(--accent); background: r
 /* Keep the comment text comfortable to read. */
 .comment-item p { margin: 0; color: var(--muted-strong); white-space: pre-wrap; overflow-wrap: anywhere; }
 
-/* Let the analytics chart shrink with the editor column. */
-.editor-analytics canvas { display: block; width: 100%; height: auto; margin-top: 8px; }
+/* Let Chart.js size the canvas inside its fixed-height wrapper. */
+.editor-analytics canvas { display: block; }
 
 /* Keep the chart legend on one quiet line. */
 .analytics-legend { margin-top: 10px; }
@@ -975,7 +975,7 @@ code { padding: 3px 7px; border-radius: 6px; color: var(--accent); background: r
 
 /* Keep moderation buttons compact and wrappable. */
 .moderation-actions { display: flex; flex-wrap: wrap; gap: 10px; }
-.moderation-actions .button { min-height: 38px; padding-inline: 16px; }
+.moderation-actions .button { min-height: 44px; padding-inline: 16px; }
 
 /* Reflow the moderation screen on tablets and phones. */
 @media (max-width: 900px) {
@@ -1010,8 +1010,11 @@ input[type="file"]::file-selector-button { margin-inline-end: 12px; padding: 6px
 .stats-table .stats-number { color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .stats-table tr.active td { background: rgba(96, 245, 210, 0.08); }
 
-/* Make each article title a full-width accessible button inside its cell. */
-.stats-table .row-select { width: 100%; padding: 0; border: 0; color: var(--ink); background: none; font: inherit; text-align: right; cursor: pointer; }
+/* Make each article title a full-width accessible button inside its cell, clamped to two lines so rows stay compact. */
+.stats-table .row-select { display: -webkit-box; width: 100%; padding: 0; border: 0; color: var(--ink); background: none; font: inherit; line-height: 1.35; text-align: right; cursor: pointer; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+
+/* Keep the short article list in view while the editor scrolls through the details and the chart. */
+.stats-queue { position: sticky; top: 16px; align-self: start; }
 .stats-table .row-select:hover { color: var(--accent); }
 
 /* Keep the pagination controls on one row. */
@@ -1034,5 +1037,24 @@ input[type="file"]::file-selector-button { margin-inline-end: 12px; padding: 6px
 }
 @media (max-width: 780px) {
   .stats-toolbar { grid-template-columns: 1fr; }
+  .stats-queue { position: static; }
   .stats-pagination { flex-direction: column; align-items: stretch; }
+}
+
+/* Keep the range buttons on one compact row above the chart. */
+.analytics-controls { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 12px; }
+.analytics-range { min-height: 32px; padding: 0 14px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted-strong); background: rgba(148, 171, 219, 0.07); font: inherit; font-size: 12px; font-weight: 800; cursor: pointer; transition: 160ms ease; }
+.analytics-range:hover { border-color: var(--line-strong); color: var(--accent); }
+.analytics-range.active { border-color: var(--accent); color: var(--paper); background: var(--accent); }
+
+/* Give Chart.js a container with a stable height that still shrinks on phones. */
+.analytics-chart-wrap { position: relative; height: 340px; }
+
+/* Separate the before/after table from the chart and color the direction of change. */
+.analytics-impact { margin-top: 16px; overflow-x: auto; }
+.impact-up { color: var(--success); font-weight: 800; }
+.impact-down { color: var(--danger); font-weight: 800; }
+
+@media (max-width: 780px) {
+  .analytics-chart-wrap { height: 260px; }
 }

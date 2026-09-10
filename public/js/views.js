@@ -225,6 +225,12 @@
   // Connect the update and delete actions.
   elements.rebuild.addEventListener("click", rebuildStats);
   elements.delete.addEventListener("click", deleteStats);
+  // Refresh the numbers when the browser restores this page from its back/forward cache, so a visit to an article is reflected immediately.
+  window.addEventListener("pageshow", (event) => {
+    if (!event.persisted) return; // A normal load already fetched fresh data.
+    loadList();
+    if (selectedArticleId) selectArticle(selectedArticleId);
+  });
   // Load the first page as soon as the page is ready.
   loadList();
 })();

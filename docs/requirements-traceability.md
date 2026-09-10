@@ -8,8 +8,8 @@
 | MVC | `src/controllers`, `src/models`, `src/views` | הוכן כשלד |
 | MongoDB + Mongoose | `src/config/database.js`, `src/models` | הוכן כשלד |
 | EJS ו-HTML5 סמנטי | `src/views` | הוכן כשלד |
-| Vanilla JS + AJAX | `public/js/reporter.js`, `public/js/editor.js`, `public/js/home.js` | התחברות, מזג אוויר, אזור הכתב, אזור העורך והפיד הושלמו; תגובות בהמשך |
-| ארבעה מודלים עיקריים | `src/models` | הוגדרו סכמות בסיס עם גרסאות כתבה |
+| Vanilla JS + AJAX | `public/js/reporter.js`, `public/js/editor.js`, `public/js/home.js`, `public/js/article.js`, `public/js/comments-moderation.js`, `public/js/views.js`, `public/js/analytics.js` | הושלם בכל האזורים: התחברות, מזג אוויר, כתב, עורך, פיד, עמוד כתבה, תגובות, סטטיסטיקות ואנליטיקה |
+| ארבעה מודלים עיקריים | `src/models` | הושלם: משתמשים, כתבות עם גרסאות, תגובות, נתוני צפייה (`ViewEvent`) וסטטיסטיקות שעתיות (`ViewStat`); לכל מודל CRUD מלא |
 | לוגים וטיפול שגיאות | `src/utils/logger.js`, `src/middleware` | הוכן |
 | סיסמאות לא גלויות | `src/utils/password.js`, `test/auth-security.test.js` | הושלם ונבדק עם salt ו-scrypt |
 | Login ו-Logout | `src/controllers/auth.controller.js`, `src/views/pages/login.ejs` | הושלם עם הודעת שגיאה בטוחה |
@@ -17,8 +17,11 @@
 | שמירת session אחרי Restart | `src/models/session.model.js`, `src/services/session.service.js` | הושלם עם MongoDB ו-cookie מוגן |
 | פיד, חיפוש, סינון, מיון ו-infinite scroll | `src/controllers/home.controller.js`, `src/routes/api.routes.js`, `public/js/home.js` | הושלם עם AJAX, טעינה של 20, cursor pagination ואינדקסים מורכבים |
 | גרסאות כתבה ו-workflow | `src/models/article.model.js`, `src/services/article-workflow.service.js`, `src/controllers/reporter.controller.js` | מעברי הכתב והעורך הוכנו עם גרסה ציבורית נפרדת |
-| תגובות והגבלת 3 בדקה | `src/models/comment.model.js` | מודל בסיסי; middleware בהמשך |
-| Impact Analytics | `src/models/view-event.model.js`, `src/services/analytics.service.js` | בסיס נתונים ושירות ראשוני |
+| תגובות והגבלת 3 בדקה | `src/services/comment.service.js`, `src/controllers/comment.controller.js`, `public/js/article.js` | הושלם: הגבלה נאכפת בשרת לפי hash של מזהה המכשיר ומחזירה 429; תגובה חדשה מופיעה מיד ללא רענון; דפדוף cursor; ניהול תגובות לעורך ב-`/editor/comments` |
+| Impact Analytics | `src/models/view-stat.model.js`, `src/services/analytics.service.js`, `public/js/analytics.js` | הושלם: גרף Chart.js (מוגש מקומית) עם ציר זמן, רזולוציה שעתית/יומית, סימון כל פרסום ועדכון, וטבלת צפיות 24 שעות לפני/אחרי כל עדכון |
+| ספירת כל כניסה לכתבה וסטטיסטיקות | `src/services/view.service.js`, `src/controllers/view.controller.js`, `src/views/pages/views.ejs` | הושלם: ספירה בשרת בזמן הרינדור, cookie מכשיר, שלוש כתיבות O(1) לכל צפייה, מסך `/editor/views` עם חיפוש, פירוט לפי גרסה, חישוב מחדש ואיפוס |
+| עמוד כתבה נגיש למנועי חיפוש | `src/controllers/article.controller.js`, `src/views/pages/article.ejs` | הושלם: התוכן המלא המאושר ב-HTML הראשוני, 404 ידידותי לכתבה לא מפורסמת |
+| העלאת תמונה מהמחשב | `src/services/upload.service.js`, `src/routes/upload.routes.js` | הושלם: `express.raw` ללא ספרייה חיצונית, בדיקת חתימת קובץ, עד 5MB, שם אקראי ב-`public/uploads` |
 | Weather widget | `src/services/weather.service.js`, `src/routes/api.routes.js`, `public/js/home.js` | הושלם עם cache של עד 15 דקות ומצב שגיאה בטוח |
 | 500 כתבות ונתוני דמו | `scripts/seed-demo.js`, `docs/mongodb-setup.md` | seed חוזר ובטוח לנתוני דמו מסומנים |
 
@@ -87,5 +90,5 @@
 
 ### Still pending from other project areas
 
-- The public article page, comments, view events, and Impact Analytics belong to Itay.
-- The viewed/unviewed filter is ready to consume the view events recorded by Itay's article page.
+- The public article page, comments, view statistics, and Impact Analytics are implemented; see `docs/itay-article-comments-views-analytics-walkthrough.md`.
+- The viewed/unviewed filter consumes the view events that the article page records on the server under the device cookie, which the page syncs into localStorage.
