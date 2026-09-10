@@ -130,7 +130,15 @@
     if (file && editable) void uploadImage(file); // Upload only when the article is editable.
   });
 
-  imageUrlInput?.addEventListener("change", () => showImagePreview(imageUrlInput.value.trim())); // Refresh the preview when the address is typed by hand.
+  imageUrlInput?.addEventListener("change", () => { // Refresh the preview and warn about addresses browsers cannot load.
+    const address = imageUrlInput.value.trim(); // Read the typed address.
+    if (/^file:/i.test(address) || /^[a-z]:\\/i.test(address) || address.startsWith("/Users/")) { // Detect a local path from the reporter's computer.
+      showImageStatus("כתובת מקומית מהמחשב לא תוצג לקוראים. השתמשו בהעלאת תמונה מהמחשב במקום.", true); // Point to the upload picker.
+    } else if (address) { // Clear an old warning once a usable address is entered.
+      showImageStatus("ניתן להעלות JPG, PNG, WebP או GIF עד 5MB. הכתובת תתמלא אוטומטית.");
+    }
+    showImagePreview(address); // Show the typed address.
+  });
 
   if (editable) form.addEventListener("input", queueAutosave); // Watch text changes only when editing is allowed.
   if (editable) form.addEventListener("change", queueAutosave); // Watch select changes only when editing is allowed.
