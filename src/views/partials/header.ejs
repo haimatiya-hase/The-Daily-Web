@@ -20,6 +20,7 @@
             <%# Give editors a direct link to the comment moderation page. %>
             <% if (currentUser.role === "editor") { %>
               <a class="<%= activePage === 'comments' ? 'active' : '' %>" href="/editor/comments">ניהול תגובות</a>
+              <a class="<%= activePage === 'views' ? 'active' : '' %>" href="/editor/views">סטטיסטיקות</a>
             <% } %>
             <%# Use POST for logout because it changes the saved authentication state. %>
             <form class="nav-form" action="/logout" method="post">

@@ -6,6 +6,7 @@ const authController = require("../controllers/auth.controller");
 const reporterController = require("../controllers/reporter.controller");
 const editorController = require("../controllers/editor.controller");
 const commentController = require("../controllers/comment.controller");
+const viewController = require("../controllers/view.controller");
 const { requireRole } = require("../middleware/auth.middleware");
 
 // Keep browser page routes in one router.
@@ -28,5 +29,7 @@ router.get("/reporter/articles/:articleId", requireRole("reporter"), reporterCon
 router.get("/editor", requireRole("editor"), editorController.showEditorDashboard);
 // Protect the comment moderation page with the same server-side role guard.
 router.get("/editor/comments", requireRole("editor"), commentController.showModerationPage);
+// Protect the view statistics page with the same server-side role guard.
+router.get("/editor/views", requireRole("editor"), viewController.showViewsPage);
 
 module.exports = router;
