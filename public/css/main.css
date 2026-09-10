@@ -932,8 +932,8 @@ code { padding: 3px 7px; border-radius: 6px; color: var(--accent); background: r
 /* Keep the comment text comfortable to read. */
 .comment-item p { margin: 0; color: var(--muted-strong); white-space: pre-wrap; overflow-wrap: anywhere; }
 
-/* Let the analytics chart shrink with the editor column. */
-.editor-analytics canvas { display: block; width: 100%; height: auto; margin-top: 8px; }
+/* Let Chart.js size the canvas inside its fixed-height wrapper. */
+.editor-analytics canvas { display: block; }
 
 /* Keep the chart legend on one quiet line. */
 .analytics-legend { margin-top: 10px; }
@@ -1035,4 +1035,22 @@ input[type="file"]::file-selector-button { margin-inline-end: 12px; padding: 6px
 @media (max-width: 780px) {
   .stats-toolbar { grid-template-columns: 1fr; }
   .stats-pagination { flex-direction: column; align-items: stretch; }
+}
+
+/* Keep the range buttons on one compact row above the chart. */
+.analytics-controls { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 12px; }
+.analytics-range { min-height: 32px; padding: 0 14px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted-strong); background: rgba(148, 171, 219, 0.07); font: inherit; font-size: 12px; font-weight: 800; cursor: pointer; transition: 160ms ease; }
+.analytics-range:hover { border-color: var(--line-strong); color: var(--accent); }
+.analytics-range.active { border-color: var(--accent); color: var(--paper); background: var(--accent); }
+
+/* Give Chart.js a container with a stable height that still shrinks on phones. */
+.analytics-chart-wrap { position: relative; height: 340px; }
+
+/* Separate the before/after table from the chart and color the direction of change. */
+.analytics-impact { margin-top: 16px; overflow-x: auto; }
+.impact-up { color: var(--success); font-weight: 800; }
+.impact-down { color: var(--danger); font-weight: 800; }
+
+@media (max-width: 780px) {
+  .analytics-chart-wrap { height: 260px; }
 }

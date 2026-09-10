@@ -1,4 +1,4 @@
-// Draw the editor Impact Analytics chart inside one private browser module.
+// Draw the Impact Analytics chart with Chart.js inside one private browser module.
 (() => {
   const canvas = document.querySelector("#analytics-chart"); // Find the chart drawing surface.
   const statusText = document.querySelector("#analytics-status"); // Find the panel status message.
@@ -6,170 +6,232 @@
   const legend = document.querySelector("#analytics-legend"); // Find the marker explanation line.
   if (!canvas || !statusText) return; // Stop safely when the analytics panel is not on this page.
 
-  const chart2d = canvas.getContext("2d"); // Reuse one drawing context for every render.
-  const DAY_MS = 24 * 60 * 60 * 1000; // Keep one day in milliseconds for axis math.
+  const RANGES = [["24h", "24 שעות"], ["7d", "7 ימים"], ["30d", "30 ימים"], ["all", "הכול"]]; // Offer the same ranges the API accepts.
+  const COLORS = { line: "#60f5d2", fill: "rgba(96, 245, 210, 0.16)", grid: "rgba(148, 171, 219, 0.18)", text: "#9aa8c4", marker: "#ff78c8", markerText: "#ffb7dd" }; // Match the site palette.
+  let articleId = null; // Remember which article is selected.
+  let range = "7d"; // Start with one week of hourly detail.
+  let chart = null; // Keep the live Chart.js instance so it can be replaced.
+  let requestVersion = 0; // Identify and ignore stale responses.
 
-  // Match the site palette without reading CSS at draw time.
-  const COLORS = {
-    axis: "rgba(148, 171, 219, 0.35)", // Quiet axis and grid lines.
-    text: "#9aa8c4", // Muted axis labels.
-    line: "#60f5d2", // Accent color for the views line.
-    fill: "rgba(96, 245, 210, 0.14)", // Soft area under the views line.
-    marker: "#ff78c8", // Pink vertical lines for publication points.
-    markerText: "#ffb7dd" // Readable labels above publication markers.
+  // Build the range buttons, the sized chart wrapper, and the impact table once.
+  const controls = document.createElement("div");
+  controls.className = "analytics-controls";
+  for (const [value, label] of RANGES) { // Create one button per range.
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = `analytics-range${value === range ? " active" : ""}`;
+    button.dataset.range = value;
+    button.textContent = label;
+    button.addEventListener("click", () => { range = value; updateRangeButtons(); load(); }); // Reload the chart in the chosen range.
+    controls.append(button);
+  }
+  statusText.after(controls); // Place the buttons under the status line.
+
+  const wrap = document.createElement("div"); // Give Chart.js a container with a fixed height.
+  wrap.className = "analytics-chart-wrap";
+  canvas.replaceWith(wrap);
+  wrap.append(canvas);
+  canvas.removeAttribute("width"); // Let Chart.js size the canvas to the wrapper.
+  canvas.removeAttribute("height");
+  canvas.hidden = false; // The wrapper now controls visibility; the template's hidden attribute must not keep the canvas at zero size.
+  wrap.hidden = true; // Start hidden until an article is selected.
+
+  const impact = document.createElement("div"); // Hold the before/after table under the chart.
+  impact.className = "analytics-impact";
+  impact.hidden = true;
+  (legend || wrap).after(impact);
+
+  // Highlight the active range button.
+  const updateRangeButtons = () => {
+    for (const button of controls.querySelectorAll(".analytics-range")) button.classList.toggle("active", button.dataset.range === range);
   };
 
-  // Convert one YYYY-MM-DD day key into a UTC timestamp.
-  const dayToTime = (day) => Date.parse(`${day}T00:00:00.000Z`);
+  // Load the Chart.js build served by the server only when the chart is first needed.
+  const loadChartLibrary = () => new Promise((resolve, reject) => {
+    if (window.Chart) { resolve(window.Chart); return; } // Reuse the library when it is already loaded.
+    const script = document.createElement("script");
+    script.src = "/vendor/chart.js/chart.umd.js";
+    script.onload = () => resolve(window.Chart);
+    script.onerror = () => reject(new Error("ספריית הגרפים לא נטענה."));
+    document.head.append(script);
+  });
 
-  // Format one timestamp as a short numeric date for axis labels.
-  const formatAxisDate = (time) => new Intl.DateTimeFormat("he-IL", { day: "2-digit", month: "2-digit" }).format(new Date(time));
+  // Format a timestamp for axis ticks depending on the resolution.
+  const formatTick = (ms, resolution) => new Intl.DateTimeFormat("he-IL", resolution === "hour"
+    ? { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }
+    : { day: "2-digit", month: "2-digit" }).format(new Date(ms));
 
-  // Fill missing days with zero so the line shows quiet days honestly.
-  const buildDailySeries = (timeline, markers) => {
-    const viewsByDay = new Map(); // Look up recorded totals by day key.
-    for (const point of timeline) viewsByDay.set(point.day, point.views); // Index the aggregated API points.
+  // Format a timestamp fully for tooltips and the impact table.
+  const formatFull = (value) => new Intl.DateTimeFormat("he-IL", { dateStyle: "short", timeStyle: "short" }).format(new Date(value));
 
-    const times = timeline.map((point) => dayToTime(point.day)) // Collect every recorded day.
-      .concat(markers.map((marker) => Date.parse(marker.publishedAt))) // Include marker days so publication points stay inside the axis.
-      .filter((time) => Number.isFinite(time)); // Drop values that cannot become a date.
-    if (times.length === 0) return []; // Report an empty series when there is nothing to draw.
-
-    const firstDay = Math.floor(Math.min(...times) / DAY_MS) * DAY_MS; // Start the axis on the earliest involved day.
-    const lastDay = Math.floor(Math.max(...times) / DAY_MS) * DAY_MS; // End the axis on the latest involved day.
-    const series = []; // Collect one point per calendar day.
-
-    for (let time = firstDay; time <= lastDay; time += DAY_MS) { // Walk the full day range without gaps.
-      const dayKey = new Date(time).toISOString().slice(0, 10); // Rebuild the aggregation day key.
-      series.push({ time, views: viewsByDay.get(dayKey) || 0 }); // Use zero views for days without events.
+  // Draw a dashed labeled line at every publication that falls inside the drawn window.
+  const markerPlugin = {
+    id: "publicationMarkers",
+    afterDatasetsDraw(instance, args, options) {
+      const { ctx, chartArea, scales } = instance;
+      for (const marker of options.markers || []) { // Draw only markers inside the window.
+        if (!marker.inRange) continue;
+        const x = scales.x.getPixelForValue(Date.parse(marker.publishedAt));
+        if (x < chartArea.left || x > chartArea.right) continue;
+        ctx.save();
+        ctx.strokeStyle = COLORS.marker;
+        ctx.setLineDash([5, 4]);
+        ctx.beginPath();
+        ctx.moveTo(x, chartArea.top);
+        ctx.lineTo(x, chartArea.bottom);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = COLORS.markerText;
+        ctx.font = "bold 11px system-ui";
+        ctx.textAlign = "center";
+        ctx.fillText(marker.versionNumber > 1 ? `עדכון ${marker.versionNumber - 1} (v${marker.versionNumber})` : "פרסום", x, chartArea.top - 6); // Name the first publication and every update.
+        ctx.restore();
+      }
     }
-
-    return series; // Return the gap-free chart series.
   };
 
-  // Draw the axes, the daily views line, and the publication markers.
-  const drawChart = (series, markers) => {
-    const width = canvas.width; // Use the fixed drawing width.
-    const height = canvas.height; // Use the fixed drawing height.
-    const pad = { top: 30, left: 46, right: 16, bottom: 34 }; // Reserve space for labels around the plot.
-    const plotWidth = width - pad.left - pad.right; // Compute the usable horizontal plot size.
-    const plotHeight = height - pad.top - pad.bottom; // Compute the usable vertical plot size.
+  // Replace the chart with a new one drawn from the API response.
+  const render = (Chart, data) => {
+    if (chart) chart.destroy(); // Free the previous chart before drawing the new one.
+    const resolution = data.resolution;
 
-    const firstTime = series[0].time; // Read the axis start time.
-    const lastTime = series[series.length - 1].time; // Read the axis end time.
-    const timeSpan = Math.max(lastTime - firstTime, DAY_MS); // Avoid division by zero for one-day charts.
-    const maxViews = Math.max(...series.map((point) => point.views), 1); // Scale the vertical axis to the busiest day.
+    chart = new Chart(canvas.getContext("2d"), {
+      type: "line",
+      data: {
+        datasets: [{
+          label: "צפיות",
+          data: data.points.map((point) => ({ x: Date.parse(point.time), y: point.views })), // Use real timestamps on the x axis.
+          borderColor: COLORS.line,
+          backgroundColor: COLORS.fill,
+          fill: true,
+          tension: 0.25,
+          borderWidth: 2,
+          pointRadius: resolution === "hour" ? 0 : 3, // Keep hourly lines clean and daily points visible.
+          pointHoverRadius: 5
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false, // Draw immediately so the graph is complete even when the tab was in the background.
+        parsing: false, // The data is already {x, y}.
+        interaction: { mode: "nearest", axis: "x", intersect: false },
+        layout: { padding: { top: 18 } }, // Leave room for the marker labels.
+        scales: {
+          x: {
+            type: "linear",
+            min: Date.parse(data.from),
+            max: Date.parse(data.to),
+            ticks: { color: COLORS.text, maxTicksLimit: 8, callback: (value) => formatTick(value, resolution) },
+            grid: { color: COLORS.grid }
+          },
+          y: {
+            beginAtZero: true,
+            ticks: { color: COLORS.text, precision: 0 },
+            grid: { color: COLORS.grid },
+            title: { display: true, text: resolution === "hour" ? "צפיות לשעה" : "צפיות ליום", color: COLORS.text }
+          }
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            rtl: true,
+            textDirection: "rtl",
+            callbacks: {
+              title: (items) => formatFull(items[0].parsed.x),
+              label: (item) => `${item.parsed.y} צפיות`
+            }
+          },
+          publicationMarkers: { markers: data.markers }
+        }
+      },
+      plugins: [markerPlugin]
+    });
+  };
 
-    const xFor = (time) => pad.left + ((time - firstTime) / timeSpan) * plotWidth; // Map one timestamp onto the horizontal axis.
-    const yFor = (views) => pad.top + plotHeight - (views / maxViews) * plotHeight; // Map one views value onto the vertical axis.
+  // Fill the before/after table so the impact of every update is stated in numbers.
+  const renderImpact = (markers) => {
+    impact.replaceChildren();
+    const updates = markers.filter((marker) => marker.versionNumber > 1); // The first publication has nothing before it.
+    if (updates.length === 0) { impact.hidden = true; return; }
 
-    chart2d.clearRect(0, 0, width, height); // Remove the previous article chart.
-    chart2d.font = "11px system-ui"; // Keep axis labels small and readable.
-
-    // Draw four horizontal grid lines with their view counts.
-    for (let step = 0; step <= 4; step += 1) {
-      const views = Math.round((maxViews / 4) * step); // Compute the value of this grid line.
-      const y = yFor(views); // Position the line by its value.
-      chart2d.strokeStyle = COLORS.axis; // Use the quiet grid color.
-      chart2d.beginPath();
-      chart2d.moveTo(pad.left, y);
-      chart2d.lineTo(width - pad.right, y);
-      chart2d.stroke();
-      chart2d.fillStyle = COLORS.text; // Use the muted label color.
-      chart2d.textAlign = "right"; // Keep numbers beside the axis.
-      chart2d.fillText(String(views), pad.left - 8, y + 4); // Label the grid line.
+    const table = document.createElement("table");
+    table.className = "stats-table";
+    const head = document.createElement("thead");
+    const headRow = document.createElement("tr");
+    for (const text of ["עדכון", "מועד הפרסום", "24 שעות לפני", "24 שעות אחרי", "שינוי"]) {
+      const th = document.createElement("th");
+      th.scope = "col";
+      th.textContent = text;
+      headRow.append(th);
     }
-
-    // Draw up to six date labels along the time axis.
-    const labelCount = Math.min(series.length, 6); // Avoid crowded overlapping labels.
-    chart2d.textAlign = "center"; // Center each date under its position.
-    for (let step = 0; step < labelCount; step += 1) {
-      const point = series[Math.round((series.length - 1) * (step / Math.max(labelCount - 1, 1)))]; // Pick evenly spaced days.
-      chart2d.fillStyle = COLORS.text;
-      chart2d.fillText(formatAxisDate(point.time), xFor(point.time), height - 12); // Label the day below the plot.
+    head.append(headRow);
+    const body = document.createElement("tbody");
+    for (const marker of updates) {
+      const row = document.createElement("tr");
+      const cells = [
+        `עדכון ${marker.versionNumber - 1} (v${marker.versionNumber})`,
+        formatFull(marker.publishedAt),
+        String(marker.viewsBefore),
+        String(marker.viewsAfter),
+        marker.changePercent === null ? "—" : `${marker.changePercent > 0 ? "+" : ""}${marker.changePercent}%`
+      ];
+      cells.forEach((text, index) => {
+        const td = document.createElement("td");
+        td.textContent = text;
+        if (index === 4 && marker.changePercent !== null) td.className = marker.changePercent >= 0 ? "impact-up" : "impact-down"; // Color the direction of the change.
+        row.append(td);
+      });
+      body.append(row);
     }
-
-    // Fill the area under the line before drawing the line itself.
-    chart2d.beginPath();
-    chart2d.moveTo(xFor(series[0].time), yFor(0)); // Start the area on the baseline.
-    for (const point of series) chart2d.lineTo(xFor(point.time), yFor(point.views)); // Follow the daily values.
-    chart2d.lineTo(xFor(series[series.length - 1].time), yFor(0)); // Close the area on the baseline.
-    chart2d.closePath();
-    chart2d.fillStyle = COLORS.fill; // Use the soft accent fill.
-    chart2d.fill();
-
-    // Draw the daily views line above the filled area.
-    chart2d.beginPath();
-    for (const [index, point] of series.entries()) { // Connect every day on the axis.
-      if (index === 0) chart2d.moveTo(xFor(point.time), yFor(point.views)); // Start at the first day.
-      else chart2d.lineTo(xFor(point.time), yFor(point.views)); // Continue through each next day.
-    }
-    chart2d.strokeStyle = COLORS.line; // Use the accent line color.
-    chart2d.lineWidth = 2; // Keep the line clearly visible.
-    chart2d.stroke();
-    chart2d.lineWidth = 1; // Restore the default width for other shapes.
-
-    // Draw a small point on every day that recorded views.
-    chart2d.fillStyle = COLORS.line;
-    for (const point of series) {
-      if (point.views === 0) continue; // Keep zero days as a plain line.
-      chart2d.beginPath();
-      chart2d.arc(xFor(point.time), yFor(point.views), 3, 0, Math.PI * 2); // Mark the recorded value.
-      chart2d.fill();
-    }
-
-    // Mark every editor publication so views before and after an update are comparable.
-    for (const marker of markers) {
-      const time = Date.parse(marker.publishedAt); // Read the exact approval moment.
-      if (!Number.isFinite(time)) continue; // Skip markers without a valid date.
-      const x = Math.min(Math.max(xFor(time), pad.left), width - pad.right); // Keep the marker inside the plot.
-
-      chart2d.strokeStyle = COLORS.marker; // Use the pink publication color.
-      chart2d.setLineDash([5, 4]); // Make markers visually different from the views line.
-      chart2d.beginPath();
-      chart2d.moveTo(x, pad.top);
-      chart2d.lineTo(x, pad.top + plotHeight);
-      chart2d.stroke();
-      chart2d.setLineDash([]); // Restore solid lines for the next shapes.
-
-      chart2d.fillStyle = COLORS.markerText; // Use the readable marker label color.
-      chart2d.textAlign = "center";
-      const label = marker.versionNumber > 1 ? `עדכון ${marker.versionNumber}` : "פרסום"; // Name the first publication and every update.
-      chart2d.fillText(label, x, pad.top - 8); // Place the label above the marker line.
-    }
+    table.append(head, body);
+    impact.append(table);
+    impact.hidden = false;
   };
 
   // Show a panel message and hide the chart when there is nothing to draw.
   const showEmptyState = (text) => {
-    statusText.textContent = text; // Explain the current panel state.
-    canvas.hidden = true; // Hide the stale chart surface.
-    if (legend) legend.hidden = true; // Hide the legend with the chart.
+    statusText.textContent = text;
+    wrap.hidden = true;
+    impact.hidden = true;
+    if (legend) legend.hidden = true;
   };
 
-  // Load and draw the analytics of the article selected in the editor queue.
-  document.addEventListener("editor:article-selected", async (event) => {
-    const { articleId } = event.detail; // Read the selected article identifier.
+  // Load and draw the analytics of the selected article in the selected range.
+  const load = async () => {
+    if (!articleId) return; // Wait for a selection.
+    const version = ++requestVersion; // Mark this request so a slower older one is ignored.
     statusText.textContent = "טוען נתוני צפיות..."; // Give immediate feedback while the request runs.
 
-    try { // Handle request failures without breaking the editor page.
-      const response = await fetch(`/api/editor/articles/${articleId}/analytics`, { headers: { Accept: "application/json" } }); // Ask the protected analytics endpoint.
-      const result = await response.json().catch(() => ({})); // Read the JSON body even on errors.
-      if (!response.ok) throw new Error(result.error?.message || "טעינת הנתונים נכשלה."); // Convert API errors into one visible message.
+    try {
+      const [Chart, response] = await Promise.all([
+        loadChartLibrary(),
+        fetch(`/api/analytics/${articleId}?range=${encodeURIComponent(range)}`, { headers: { Accept: "application/json" } })
+      ]);
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error?.message || "טעינת הנתונים נכשלה.");
+      if (version !== requestVersion) return; // Drop a stale response.
 
       if (totalPill) totalPill.textContent = `${result.article.totalViews} צפיות`; // Show the total counter of this article.
 
-      const series = buildDailySeries(result.timeline || [], result.markers || []); // Build the gap-free daily series.
-      if (series.length === 0) { // Explain when the article has no recorded views yet.
-        showEmptyState("אין עדיין נתוני צפייה לכתבה הזאת.");
+      if (result.summary.viewsInRange === 0 && !result.markers.some((marker) => marker.inRange)) { // Explain an empty window.
+        showEmptyState("אין צפיות בטווח הזמן שנבחר. נסו טווח רחב יותר.");
         return;
       }
 
-      canvas.hidden = false; // Reveal the chart surface before drawing.
-      if (legend) legend.hidden = false; // Show the marker explanation with the chart.
-      drawChart(series, result.markers || []); // Draw the views line and the publication markers.
-      statusText.textContent = `גרף צפיות עבור: ${result.article.title}`; // Name the article shown by the chart.
-    } catch (error) { // Show a safe error while keeping the rest of the dashboard usable.
-      showEmptyState(error.message);
+      wrap.hidden = false;
+      if (legend) { legend.hidden = false; legend.textContent = `— ${result.resolution === "hour" ? "צפיות לשעה" : "צפיות ליום"} · | קו אנכי מסמן אישור ופרסום גרסה · ${result.summary.viewsInRange} צפיות בטווח`; }
+      render(Chart, result);
+      renderImpact(result.markers);
+      statusText.textContent = `גרף צפיות עבור: ${result.article.title}`;
+    } catch (error) {
+      if (version === requestVersion) showEmptyState(error.message);
     }
+  };
+
+  // Redraw whenever the page selects an article.
+  document.addEventListener("editor:article-selected", (event) => {
+    articleId = event.detail.articleId;
+    load();
   });
 })();
