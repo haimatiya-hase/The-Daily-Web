@@ -15,19 +15,35 @@
   const loadMessage = document.querySelector("#comments-load-message"); // Find the load-more feedback area.
   let isLoadingMore = false; // Prevent two load-more requests from running together.
 
-  // Reuse the same anonymous browser key that the home feed stores.
-  const getClientKey = () => { // Return one reusable anonymous key for this browser.
+  // Read the device cookie that the server used when it counted this visit.
+  const readDeviceCookie = () => { // Return the anonymous device key sent by the server, or an empty string.
+    const prefix = "dailyWebDeviceKey="; // Match the cookie name used by the server.
+    const part = document.cookie.split(";").map((item) => item.trim()).find((item) => item.startsWith(prefix)); // Find the device cookie.
+    try { // Decode safely in case the value was encoded.
+      return part ? decodeURIComponent(part.slice(prefix.length)) : ""; // Return the cookie value without its name.
+    } catch (error) { // Ignore a malformed cookie value.
+      return "";
+    }
+  };
+
+  // Keep one anonymous key shared by the server count, the comment limit, and the home feed's viewed filter.
+  const getClientKey = () => { // Return the device key, storing it where the home feed script reads it.
     const storageKey = "dailyWebClientKey"; // Share the storage name with the home feed script.
+    const cookieKey = readDeviceCookie(); // Prefer the key the server counted this visit under.
 
     try { // Recover safely when browser storage is unavailable.
-      let value = localStorage.getItem(storageKey); // Reuse the key from an earlier visit.
-      if (!value) { // Create a key only on the first visit.
+      if (cookieKey) { // Sync the server key so the feed's viewed filter matches the recorded views.
+        if (localStorage.getItem(storageKey) !== cookieKey) localStorage.setItem(storageKey, cookieKey);
+        return cookieKey;
+      }
+      let value = localStorage.getItem(storageKey); // Fall back to the key from an earlier visit.
+      if (!value) { // Create a key only when neither the cookie nor storage has one.
         value = window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`; // Prefer a secure browser UUID with a simple fallback.
         localStorage.setItem(storageKey, value); // Save the key for later visits.
       }
       return value; // Return the existing or newly created browser key.
     } catch (error) { // Handle private browsing or blocked storage.
-      return ""; // Let the server fall back to a network identifier.
+      return cookieKey; // The cookie alone still identifies the device for the server.
     }
   };
 
@@ -76,10 +92,6 @@
     target.classList.toggle("is-error", isError); // Color validation, rate-limit, and network errors.
     target.classList.toggle("is-success", !isError && Boolean(text)); // Color the success confirmation.
   };
-
-  // Count this visit for the view statistics without blocking the page.
-  fetch(`/api/articles/${articleId}/views`, { method: "POST", headers: buildHeaders() })
-    .catch(() => {}); // Ignore beacon failures because reading must keep working.
 
   // Send a new comment through AJAX and show it immediately in the list.
   form.addEventListener("submit", async (event) => {

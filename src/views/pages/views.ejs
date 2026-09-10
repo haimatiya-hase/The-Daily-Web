@@ -1,0 +1,115 @@
+<%- include("../partials/head", { pageTitle }) %> <%# Start the shared HTML document. %>
+<%- include("../partials/header", { activePage }) %> <%# Show the shared navigation for the editor. %>
+
+<main class="container page-shell"> <%# Hold the view statistics layout. %>
+  <section class="dashboard-header"> <%# Introduce the statistics workspace. %>
+    <div class="eyebrow">VIEW STATISTICS</div>
+    <h1>סטטיסטיקות צפייה</h1>
+    <p>שלום <%= user.displayName %>. כאן רואים כמה קוראים הגיעו לכל כתבה, מתי, ובאיזו גרסה — ומתקנים את הנתונים בעת הצורך.</p>
+  </section>
+
+  <form class="filters-card stats-toolbar" id="stats-filters"> <%# Collect search and sort for the statistics API. %>
+    <label> <%# Label the title search control. %>
+      חיפוש לפי כותרת
+      <input id="stats-search" name="search" type="search" maxlength="100" placeholder="לדוגמה: פסטיבל">
+    </label>
+    <label> <%# Label the sort control. %>
+      מיון
+      <select id="stats-sort" name="sort">
+        <% const sortLabels = { total: "הכי נצפות", newest: "פורסמו לאחרונה" }; %> <%# Translate the accepted sort values into Hebrew labels. %>
+        <% for (const sort of sorts) { %> <%# Build the options from the same list the server accepts. %>
+          <option value="<%= sort %>"><%= sortLabels[sort] || sort %></option>
+        <% } %>
+      </select>
+    </label>
+    <button class="button button-primary" type="submit">חיפוש</button> <%# Reload the list with the selected filters. %>
+    <button class="button button-secondary" id="stats-clear" type="button">ניקוי</button> <%# Restore the default filters. %>
+  </form>
+
+  <p class="editor-message" id="stats-message" role="status" aria-live="polite"></p> <%# Announce results to assistive technology. %>
+
+  <section class="editor-layout" aria-label="סטטיסטיקות צפייה"> <%# Place the article list beside the selected article details. %>
+    <aside class="form-card editor-queue"> <%# List the published articles with their totals. %>
+      <div class="section-heading"> <%# Keep the list title and count together. %>
+        <div>
+          <div class="eyebrow">PUBLISHED ARTICLES</div>
+          <h2>כתבות</h2>
+        </div>
+        <span class="status-pill" id="stats-total">0</span> <%# Show how many articles match the filters. %>
+      </div>
+      <div class="table-wrap"> <%# Let the table scroll sideways on narrow screens instead of the page. %>
+        <table class="stats-table" id="stats-table">
+          <thead>
+            <tr>
+              <th scope="col">כותרת</th>
+              <th scope="col">סה"כ</th>
+              <th scope="col">24 שעות</th>
+              <th scope="col">7 ימים</th>
+              <th scope="col">גרסה</th>
+            </tr>
+          </thead>
+          <tbody id="stats-body" aria-live="polite"> <%# Let JavaScript replace the loading state with rows. %>
+            <tr><td colspan="5" class="loading-indicator">טוען נתונים...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="stats-pagination"> <%# Move between pages of the list. %>
+        <button class="button button-secondary" id="stats-prev" type="button">הקודם</button>
+        <span class="form-note" id="stats-page-label">עמוד 1 מתוך 1</span>
+        <button class="button button-secondary" id="stats-next" type="button">הבא</button>
+      </div>
+    </aside>
+
+    <section class="editor-workspace"> <%# Hold the details and the chart of one selected article. %>
+      <div class="form-card" id="stats-detail"> <%# Show the numbers of the selected article. %>
+        <div class="section-heading"> <%# Show the selected title and its current version. %>
+          <div>
+            <div class="eyebrow">SELECTED ARTICLE</div>
+            <h2 id="stats-selected-title">בחרו כתבה</h2>
+          </div>
+          <span class="status-pill" id="stats-selected-version">—</span>
+        </div>
+
+        <div class="stats-grid"> <%# Show the headline numbers as tiles. %>
+          <div class="stat-tile"><strong id="stat-counter">0</strong><span>סה"כ צפיות</span></div>
+          <div class="stat-tile"><strong id="stat-24h">0</strong><span>ב-24 השעות האחרונות</span></div>
+          <div class="stat-tile"><strong id="stat-7d">0</strong><span>ב-7 הימים האחרונים</span></div>
+          <div class="stat-tile"><strong id="stat-buckets">0</strong><span>שעות עם צפיות</span></div>
+        </div>
+        <p class="form-note" id="stat-range">אין עדיין נתוני צפייה.</p> <%# Show the first and last recorded hour. %>
+
+        <h3 class="stats-subtitle">צפיות לפי גרסה שפורסמה</h3> <%# Label the per-version breakdown. %>
+        <div class="table-wrap">
+          <table class="stats-table">
+            <thead><tr><th scope="col">גרסה</th><th scope="col">צפיות</th><th scope="col">חלק מהסה"כ</th></tr></thead>
+            <tbody id="stats-versions"><tr><td colspan="3" class="form-note">בחרו כתבה כדי לראות פירוט.</td></tr></tbody>
+          </table>
+        </div>
+
+        <div class="editor-actions"> <%# Group the update and delete actions of the statistics model. %>
+          <button class="button button-secondary" id="stats-rebuild" type="button" disabled>חישוב מחדש מהאירועים</button>
+          <button class="button button-danger" id="stats-delete" type="button" disabled>איפוס נתוני צפייה</button>
+        </div>
+        <p class="form-note">חישוב מחדש בונה את המונים מאירועי הצפייה הגולמיים. איפוס מוחק את כל נתוני הצפייה של הכתבה ואינו ניתן לביטול.</p> <%# Explain both actions before they are used. %>
+      </div>
+
+      <section class="form-card editor-analytics" aria-labelledby="analytics-title"> <%# Reuse the Impact Analytics chart for the selected article. %>
+        <div class="section-heading">
+          <div>
+            <div class="eyebrow">IMPACT ANALYTICS</div>
+            <h2 id="analytics-title">צפיות לאורך זמן</h2>
+          </div>
+          <span class="status-pill" id="analytics-total">0 צפיות</span>
+        </div>
+        <p class="form-note" id="analytics-status">בחרו כתבה כדי לראות את גרף הצפיות ואת נקודות פרסום העדכונים.</p>
+        <canvas id="analytics-chart" width="920" height="340" hidden role="img" aria-label="גרף צפיות לאורך זמן עם סימון פרסומי עדכונים"></canvas>
+        <p class="form-note analytics-legend" id="analytics-legend" hidden>— קו הצפיות היומי · | קו אנכי מסמן אישור ופרסום גרסה</p>
+      </section>
+    </section>
+  </section>
+</main>
+
+<!-- Load the statistics screen and the shared chart after the page structure is ready. -->
+<script src="/js/analytics.js" defer></script>
+<script src="/js/views.js" defer></script>
+<%- include("../partials/footer") %> <%# Close the shared HTML document. %>
