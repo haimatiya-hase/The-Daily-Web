@@ -150,8 +150,11 @@ an updated article is being reviewed.
   published articles with total / 24h / 7d views, see the per-version
   breakdown, rebuild the buckets and counter from the raw events (Update), or
   reset an article's view data (Delete).
-- The editor Impact Analytics panel draws daily views on a canvas chart and marks
-  every point where an editor approved and published a version.
+- Impact Analytics (Chart.js, served locally from `node_modules` so it works
+  offline): views over a real time axis with hourly detail for 24h / 7d and daily
+  detail for 30d / all, gaps filled with zeros, a dashed labeled marker at every
+  point an editor approved and published a version, and a table that states the
+  views in the 24 hours before and after each update with the percentage change.
 
 ## Quick start
 
@@ -208,7 +211,8 @@ The seed creates or updates:
 
 - 4 team reporters and 1 team editor;
 - 500 marked demo articles in all workflow states;
-- published and working versions for update scenarios;
+- published and working versions for update scenarios, including articles with
+  two approved updates so the graph shows several publication markers;
 - close to 400 demo comments spread over two weeks, including long threads for
   pagination and hidden comments for the moderation screen;
 - 30 days of view events with hourly spread for every published article, dense
@@ -251,6 +255,12 @@ Image upload (reporters and editors, raw image body, no external library):
 
 ```text
 POST /api/uploads/images    Content-Type: image/png | image/jpeg | image/webp | image/gif
+```
+
+Impact Analytics endpoint (editor only):
+
+```text
+GET /api/analytics/:articleId?range=24h|7d|30d|all   series, markers, before/after impact
 ```
 
 View statistics endpoints (editor only):
