@@ -6,7 +6,6 @@ const logger = require("../utils/logger");
 const { ensureDeviceKey } = require("../utils/client-key");
 const commentService = require("../services/comment.service");
 const { recordArticleView } = require("../services/view.service");
-const { getArticleDailyViews } = require("../services/analytics.service");
 
 // Reuse one Hebrew date formatter for article metadata.
 const publishedDateFormat = new Intl.DateTimeFormat("he-IL", { dateStyle: "long" });
@@ -108,45 +107,4 @@ const showArticle = async (req, res, next) => {
   }
 };
 
-// Return the Impact Analytics data of one article for the editor graph.
-const getArticleAnalytics = async (req, res, next) => {
-  try {
-    // Reject malformed identifiers before querying MongoDB.
-    if (!mongoose.isValidObjectId(req.params.articleId)) {
-      throw new HttpError(404, "הכתבה לא נמצאה.");
-    }
-
-    // Read only the fields needed to describe the graph and its markers.
-    const article = await Article.findById(req.params.articleId)
-      .select("workingVersion.title publishedVersion.title publishedVersion.versionNumber publishedVersion.publishedAt publicationHistory viewCount")
-      .lean();
-
-    if (!article) {
-      throw new HttpError(404, "הכתבה לא נמצאה.");
-    }
-
-    // Prefer the recorded history and fall back to the single known publication for older records.
-    const markers = (article.publicationHistory?.length
-      ? article.publicationHistory
-      : [article.publishedVersion].filter((version) => version?.publishedAt)
-    ).map((entry) => ({
-      versionNumber: Number(entry.versionNumber) || 1,
-      publishedAt: entry.publishedAt
-    }));
-
-    // Send the daily totals and publication markers used by the canvas chart.
-    res.json({
-      article: {
-        id: String(article._id),
-        title: article.publishedVersion?.title || article.workingVersion?.title || "ללא כותרת",
-        totalViews: article.viewCount || 0
-      },
-      timeline: await getArticleDailyViews(req.params.articleId),
-      markers
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-module.exports = { showArticle, getArticleAnalytics };
+module.exports = { showArticle };
