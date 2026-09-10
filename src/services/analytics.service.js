@@ -18,6 +18,8 @@ const RANGES = Object.freeze({
   all: { windowMs: null, resolution: "day" }
 });
 const DEFAULT_RANGE = "7d";
+// Never draw the all-time range narrower than one week, so a brand-new article still gets a readable axis.
+const MIN_ALL_WINDOW_MS = 7 * DAY_MS;
 
 // Return the start of the hour or the day that contains the given moment.
 const alignToResolution = (date, resolution) => {
@@ -118,9 +120,11 @@ const getArticleAnalytics = async (articleId, { range, now = new Date() } = {}) 
     : [article.publishedVersion].filter((version) => version?.publishedAt)
   ).map((entry) => ({ versionNumber: Number(entry.versionNumber) || 1, publishedAt: new Date(entry.publishedAt) }));
 
-  // Start the window at the range boundary, or at the earliest known activity for "all".
+  // Start the window at the range boundary, or for "all" at the earliest known activity but at least one week back.
   const earliest = [buckets[0]?.start, publications[0]?.publishedAt].filter(Boolean).sort((a, b) => a - b)[0] || now;
-  const from = windowMs ? new Date(now.getTime() - windowMs) : earliest;
+  const from = windowMs
+    ? new Date(now.getTime() - windowMs)
+    : new Date(Math.min(earliest.getTime(), now.getTime() - MIN_ALL_WINDOW_MS));
   const to = now;
 
   const points = buildSeries(buckets, from, to, resolution);
@@ -154,6 +158,7 @@ module.exports = {
   RANGES,
   DEFAULT_RANGE,
   IMPACT_WINDOW_MS,
+  MIN_ALL_WINDOW_MS,
   alignToResolution,
   buildSeries,
   computeMarkerImpact,
