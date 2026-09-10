@@ -318,7 +318,7 @@ Each student owns one product area from interface to database and tests.
 | Bremer | Home Feed, Search, Filter, Sort | `feature/bremer-home-feed` |
 | Dor | Reporter Area | `feature/dor-reporter` |
 | Haim | Editor Area and content management | `feature/haim-editor-area` |
-| Itay | Article, Comments, Views, Analytics | `feature/itay-article-analytics` |
+| Itay | Article, Comments, Views, Analytics | `feat/implement-article`, `feat/implement-comments`, `feat/implement-views`, `feat/implement-analytics`, `fix/article-image-upload` |
 
 ## Git workflow
 
@@ -348,6 +348,7 @@ tests that were run, and a screenshot when the change affects the UI.
 - [Editor area walkthrough](docs/editor-area-walkthrough.md)
 - [Authentication and weather walkthrough](docs/liri-auth-weather-walkthrough.md)
 - [Home feed walkthrough](docs/home-feed-walkthrough.md)
+- [Article, comments, views, and analytics walkthrough](docs/itay-article-comments-views-analytics-walkthrough.md)
 - [Code walkthrough](docs/code-walkthrough.md)
 - [Original project requirements](docs/project-requirements.pdf)
 - [Updated project division](docs/project-division-updated.docx)

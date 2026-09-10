@@ -90,7 +90,7 @@
 - ברמר: `feature/bremer-home-feed`
 - דור: `feature/dor-reporter`
 - חיים: `feature/haim-editor-area`
-- איתי: `feature/itay-article-analytics`
+- איתי: `feat/implement-article`, `feat/implement-comments`, `feat/implement-views`, `feat/implement-analytics`, `fix/article-image-upload`
 
 כל חבר עובד ב-branch שלו. שינויים ב-files משותפים מתבצעים רק לאחר תיאום
 ובאמצעות Pull Request.

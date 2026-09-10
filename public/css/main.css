@@ -975,7 +975,7 @@ code { padding: 3px 7px; border-radius: 6px; color: var(--accent); background: r
 
 /* Keep moderation buttons compact and wrappable. */
 .moderation-actions { display: flex; flex-wrap: wrap; gap: 10px; }
-.moderation-actions .button { min-height: 38px; padding-inline: 16px; }
+.moderation-actions .button { min-height: 44px; padding-inline: 16px; }
 
 /* Reflow the moderation screen on tablets and phones. */
 @media (max-width: 900px) {
