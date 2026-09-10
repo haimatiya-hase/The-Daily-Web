@@ -11,6 +11,9 @@
   const message = document.querySelector("#comment-message"); // Find the feedback message area.
   const commentsList = document.querySelector("#comments-list"); // Find the rendered comment list.
   const commentsCount = document.querySelector("#comments-count"); // Find the live comment counter.
+  const loadMoreButton = document.querySelector("#comments-load-more"); // Find the load-more control.
+  const loadMessage = document.querySelector("#comments-load-message"); // Find the load-more feedback area.
+  let isLoadingMore = false; // Prevent two load-more requests from running together.
 
   // Reuse the same anonymous browser key that the home feed stores.
   const getClientKey = () => { // Return one reusable anonymous key for this browser.
@@ -30,7 +33,7 @@
 
   const clientKey = getClientKey(); // Read the anonymous key once for all requests.
 
-  // Build the request headers shared by the view beacon and the comment form.
+  // Build the request headers shared by the view beacon and the comment requests.
   const buildHeaders = () => {
     const headers = { Accept: "application/json", "Content-Type": "application/json" }; // Use JSON for both directions.
     if (clientKey) headers["X-Client-Key"] = clientKey; // Send the anonymous device key when storage is available.
@@ -67,11 +70,11 @@
     return item; // Return the finished node for the list.
   };
 
-  // Show short feedback under the form without inserting HTML.
-  const showMessage = (text, isError = false) => {
-    message.textContent = text; // Replace the previous feedback text.
-    message.classList.toggle("is-error", isError); // Color validation and rate-limit errors.
-    message.classList.toggle("is-success", !isError && Boolean(text)); // Color the success confirmation.
+  // Show short feedback in one message element without inserting HTML.
+  const showMessage = (target, text, isError = false) => {
+    target.textContent = text; // Replace the previous feedback text.
+    target.classList.toggle("is-error", isError); // Color validation, rate-limit, and network errors.
+    target.classList.toggle("is-success", !isError && Boolean(text)); // Color the success confirmation.
   };
 
   // Count this visit for the view statistics without blocking the page.
@@ -86,7 +89,7 @@
     const body = bodyInput.value.trim(); // Read the trimmed comment text.
 
     if (!guestName || !body) { // Check both fields before contacting the server.
-      showMessage("יש למלא שם ותגובה לפני השליחה.", true); // Explain what is missing.
+      showMessage(message, "יש למלא שם ותגובה לפני השליחה.", true); // Explain what is missing.
       return; // Keep the typed values for correction.
     }
 
@@ -108,11 +111,44 @@
       commentsList.prepend(createCommentNode(result.comment)); // Show the stored comment immediately without reloading the list.
       commentsCount.textContent = String(Number(commentsCount.textContent || 0) + 1); // Update the visible counter.
       bodyInput.value = ""; // Clear only the text so the guest can comment again easily.
-      showMessage("התגובה פורסמה."); // Confirm the successful save.
+      showMessage(message, "התגובה פורסמה."); // Confirm the successful save.
     } catch (error) { // Show the server explanation for any failed attempt.
-      showMessage(error.message, true);
+      showMessage(message, error.message, true);
     } finally { // Always allow the next submission attempt.
       submitButton.disabled = false;
+    }
+  });
+
+  // Load the next page of older comments after the last rendered one.
+  loadMoreButton?.addEventListener("click", async () => {
+    const cursor = loadMoreButton.dataset.nextCursor; // Read the cursor left by the server or the previous page.
+    if (!cursor || isLoadingMore) return; // Stop when there is nothing more to load or a request is already running.
+
+    isLoadingMore = true; // Block a second click while this page loads.
+    loadMoreButton.disabled = true; // Show the user that the request is running.
+    showMessage(loadMessage, ""); // Clear an older error message.
+
+    try { // Handle network and API failures without losing the loaded comments.
+      const response = await fetch(`/api/articles/${articleId}/comments?cursor=${encodeURIComponent(cursor)}`, {
+        headers: { Accept: "application/json" } // Ask for JSON explicitly.
+      });
+      const result = await response.json().catch(() => ({})); // Read the JSON body even on errors.
+
+      if (!response.ok) { // Convert API errors into one visible message.
+        throw new Error(result.error?.message || "טעינת התגובות נכשלה. נסו שוב.");
+      }
+
+      for (const comment of result.comments) { // Append older comments below the ones already shown.
+        commentsList.append(createCommentNode(comment));
+      }
+
+      loadMoreButton.dataset.nextCursor = result.pagination.nextCursor || ""; // Remember where the next page starts.
+      loadMoreButton.hidden = !result.pagination.hasMore; // Hide the button on the final page.
+    } catch (error) { // Keep the button so the user can retry.
+      showMessage(loadMessage, error.message, true);
+    } finally { // Always allow the next load-more attempt.
+      isLoadingMore = false;
+      loadMoreButton.disabled = false;
     }
   });
 })();

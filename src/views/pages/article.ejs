@@ -24,7 +24,7 @@
     </div>
 
     <section class="comments-section" aria-labelledby="comments-title"> <%# Hold the reader comments and the AJAX form. %>
-      <h2 id="comments-title">תגובות (<span id="comments-count"><%= comments.length %></span>)</h2> <%# Label the area with a live comment counter. %>
+      <h2 id="comments-title">תגובות (<span id="comments-count"><%= commentsTotal %></span>)</h2> <%# Label the area with the real comment total. %>
 
       <form id="comment-form" class="comment-form" novalidate> <%# Send new comments through JavaScript without a page reload. %>
         <label> <%# Label the guest name input. %>
@@ -41,7 +41,7 @@
         </div>
       </form>
 
-      <div id="comments-list" class="comments-list"> <%# Render existing comments on the server and receive new ones from JavaScript. %>
+      <div id="comments-list" class="comments-list"> <%# Render the first comment page on the server and receive more from JavaScript. %>
         <% if (comments.length === 0) { %> <%# Show a friendly empty state until the first comment arrives. %>
           <p class="form-note" id="comments-empty">אין תגובות עדיין. אפשר להיות הראשונים להגיב.</p>
         <% } %>
@@ -54,6 +54,13 @@
             <p><%= comment.body %></p> <%# Escape the guest text so it can never run as HTML. %>
           </article>
         <% } %>
+      </div>
+
+      <div class="comments-footer"> <%# Hold the load-more control for long comment threads. %>
+        <button class="button button-secondary" id="comments-load-more" type="button"
+          data-next-cursor="<%= commentsNextCursor || '' %>"
+          <%= commentsNextCursor ? '' : 'hidden' %>>טעינת תגובות נוספות</button> <%# Continue exactly after the last rendered comment. %>
+        <p class="comment-message" id="comments-load-message" role="status" aria-live="polite"></p> <%# Announce loading problems without breaking the page. %>
       </div>
     </section>
   </article>

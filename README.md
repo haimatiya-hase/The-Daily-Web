@@ -126,7 +126,13 @@ an updated article is being reviewed.
 
 - Server-rendered article page: the full approved content is in the initial HTML.
 - Guest comments are added through AJAX and appear immediately without a reload.
-- The server blocks a fourth comment within one minute from the same device (429).
+- The server blocks a fourth comment within one minute from the same device (429)
+  and logs the blocked attempt as an operational event.
+- Long threads load twenty comments at a time with cursor pagination and a
+  load-more button; the first page and the real total are already in the HTML.
+- Editors moderate comments on `/editor/comments`: text search across all
+  articles (MongoDB text index), a visible/hidden filter, inline editing,
+  soft deletion, and restore. Every action records the acting editor.
 - Every article visit stores one view event and atomically increments the counter.
 - The editor Impact Analytics panel draws daily views on a canvas chart and marks
   every point where an editor approved and published a version.
@@ -187,7 +193,8 @@ The seed creates or updates:
 - 4 team reporters and 1 team editor;
 - 500 marked demo articles in all workflow states;
 - published and working versions for update scenarios;
-- 20 demo comments;
+- close to 400 demo comments spread over two weeks, including long threads for
+  pagination and hidden comments for the moderation screen;
 - 14 days of view events for analytics testing.
 
 The seeded stories use category-specific public photos and realistic newsroom
@@ -221,6 +228,17 @@ Health check:
 
 ```text
 GET http://localhost:3000/api/health
+```
+
+Comment endpoints:
+
+```text
+GET    /api/articles/:articleId/comments?cursor=   public, one page of a thread
+POST   /api/articles/:articleId/comments           public, rate limited per device
+GET    /api/comments?search=&status=&cursor=       editor, moderation queue
+PATCH  /api/comments/:commentId                    editor, correct the text
+DELETE /api/comments/:commentId                    editor, hide (soft delete)
+POST   /api/comments/:commentId/restore            editor, make visible again
 ```
 
 The endpoint returns the server status and the database connection status

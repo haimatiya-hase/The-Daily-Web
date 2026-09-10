@@ -7,4 +7,12 @@ function hashClientKey(value) {
   return crypto.createHash("sha256").update(String(value)).digest("hex");
 }
 
-module.exports = { hashClientKey };
+// Identify the requesting device with the anonymous browser key or a network fallback.
+const readClientKey = (req) => {
+  // Prefer the anonymous localStorage key that the browser sends in a header.
+  const headerKey = String(req.get?.("X-Client-Key") || "").trim().slice(0, 100);
+  // Fall back to the request address so rate limits still work without browser storage.
+  return headerKey || `ip:${req.ip || "unknown"}`;
+};
+
+module.exports = { hashClientKey, readClientKey };
