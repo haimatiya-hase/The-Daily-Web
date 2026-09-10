@@ -35,11 +35,28 @@ const commentSchema = new mongoose.Schema({
   deletedAt: {
     type: Date,
     default: null
+  },
+  // Remember which editor last edited, hid, or restored this comment.
+  moderatedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    default: null
+  },
+  // Remember when the last moderation action happened.
+  moderatedAt: {
+    type: Date,
+    default: null
   }
 }, { timestamps: true });
 
 // Make article lists and one-minute checks efficient.
 commentSchema.index({ article: 1, createdAt: -1 });
 commentSchema.index({ clientKeyHash: 1, createdAt: -1 });
+// Serve the public cursor pages without scanning hidden comments.
+commentSchema.index({ article: 1, deletedAt: 1, createdAt: -1, _id: -1 });
+// Serve the moderation queue ordered by newest comment inside each visibility filter.
+commentSchema.index({ deletedAt: 1, createdAt: -1, _id: -1 });
+// Let editors search comment text and guest names through one text index.
+commentSchema.index({ body: "text", guestName: "text" });
 
 module.exports = mongoose.model("Comment", commentSchema);

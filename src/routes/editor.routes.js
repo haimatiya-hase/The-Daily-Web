@@ -1,7 +1,7 @@
 // Load Express, the editor controller, and the server-side role guard.
 const express = require("express");
 const editorController = require("../controllers/editor.controller");
-const articleController = require("../controllers/article.controller"); // Load analytics and comment moderation actions.
+const articleController = require("../controllers/article.controller"); // Load the Impact Analytics action.
 const { requireRole } = require("../middleware/auth.middleware");
 
 // Keep every editor REST endpoint in one protected router.
@@ -21,9 +21,5 @@ router.post("/articles/:articleId/request-changes", requireRole("editor"), edito
 router.delete("/articles/:articleId", requireRole("editor"), editorController.deleteArticle);
 // Return the Impact Analytics timeline and publication markers of one article.
 router.get("/articles/:articleId/analytics", requireRole("editor"), articleController.getArticleAnalytics);
-// Let the editor correct the text of one reader comment.
-router.patch("/comments/:commentId", requireRole("editor"), articleController.updateComment);
-// Let the editor hide one reader comment with soft deletion.
-router.delete("/comments/:commentId", requireRole("editor"), articleController.deleteComment);
 
 module.exports = router;

@@ -277,14 +277,46 @@ async function refreshDemoRelatedData(articles) {
   await Comment.deleteMany({ article: { $in: articleIds } }).exec();
   await ViewEvent.deleteMany({ article: { $in: articleIds } }).exec();
 
-  // Add comments for the first 20 demo articles.
-  const commentDocuments = articles.slice(0, 20).map((article, index) => ({
-    article: article._id,
-    guestName: commentNames[index % commentNames.length],
-    body: "כתבה מעניינת. אשמח לראות עדכון נוסף בנושא.",
-    clientKeyHash: hashClientKey(`demo-comment-${index + 1}`)
-  }));
+  // Add realistic comment threads so pagination, search, and moderation can be demonstrated.
+  const commentBodies = [
+    "כתבה מעניינת. אשמח לראות עדכון נוסף בנושא.",
+    "תודה על הסיקור, זה בדיוק מה שחיפשתי.",
+    "לא בטוח שאני מסכים עם המסקנה, אבל הכתיבה ברורה.",
+    "האם יש מקור לנתונים שמופיעים בפסקה השנייה?",
+    "עדכון חשוב, שיתפתי עם החברים בעבודה.",
+    "הייתי שמח לראות גם את הצד השני של הסיפור.",
+    "כתבה קצרה ולעניין. כל הכבוד לכתב.",
+    "מחכה להמשך הסיקור בשבוע הבא."
+  ];
+  const commentDocuments = [];
+  const publishedForComments = articles.filter((article) => article.status === "published");
+
+  publishedForComments.forEach((article, articleIndex) => {
+    // Give the first three articles long threads so the load-more button appears, and a short spread elsewhere.
+    const threadSize = articleIndex === 0 ? 35 : articleIndex === 1 ? 28 : articleIndex === 2 ? 24 : (articleIndex * 7) % 6;
+
+    for (let position = 0; position < threadSize; position += 1) {
+      // Spread comments over the past days so the moderation queue and the thread have a natural order.
+      const createdAt = new Date(Date.now() - (articleIndex * 3 + position) * 47 * 60 * 1000);
+      // Hide a few comments so the moderation screen has restore candidates.
+      const isHidden = (articleIndex + position) % 9 === 0;
+
+      commentDocuments.push({
+        article: article._id,
+        guestName: commentNames[(position + articleIndex) % commentNames.length],
+        body: commentBodies[(position * 3 + articleIndex) % commentBodies.length],
+        // Use a stable hash so the seeded device identifier is not stored openly.
+        clientKeyHash: hashClientKey(`demo-comment-${article._id}-${position}`),
+        createdAt,
+        updatedAt: createdAt,
+        deletedAt: isHidden ? new Date(createdAt.getTime() + 60 * 60 * 1000) : null,
+        moderatedAt: isHidden ? new Date(createdAt.getTime() + 60 * 60 * 1000) : null
+      });
+    }
+  });
   await Comment.insertMany(commentDocuments);
+  // Report how many comments this run created so the summary line stays honest.
+  const commentCount = commentDocuments.length;
 
   // Add a fourteen-day view timeline for published demo articles.
   const publishedArticles = articles
@@ -331,6 +363,8 @@ async function refreshDemoRelatedData(articles) {
     // Update only the articles that received seeded events.
     [...viewTotals].map(([articleId, total]) => Article.updateOne({ _id: articleId }, { $set: { viewCount: total } }))
   );
+
+  return { commentCount };
 }
 
 // Seed users, articles, comments, and views for the whole team.
@@ -365,9 +399,9 @@ async function seed() {
   const articles = await upsertDemoArticles(reporters, editor);
 
   // Rebuild the related comments and analytics timeline.
-  await refreshDemoRelatedData(articles);
+  const related = await refreshDemoRelatedData(articles);
 
-  console.log(`Seed complete. Users: 5, articles: ${articles.length}, comments: 20, view timeline: ready.`);
+  console.log(`Seed complete. Users: 5, articles: ${articles.length}, comments: ${related.commentCount}, view timeline: ready.`);
 }
 
 seed()

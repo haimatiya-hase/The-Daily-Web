@@ -1,0 +1,50 @@
+<%- include("../partials/head", { pageTitle }) %> <%# Start the shared HTML document. %>
+<%- include("../partials/header", { activePage }) %> <%# Show the shared navigation for the editor. %>
+
+<main class="container page-shell"> <%# Hold the comment moderation layout. %>
+  <section class="dashboard-header"> <%# Introduce the moderation workspace. %>
+    <div class="eyebrow">COMMENT MODERATION</div>
+    <h1>ניהול תגובות</h1>
+    <p>שלום <%= user.displayName %>. כאן מחפשים, עורכים, מסתירים ומשחזרים תגובות של קוראים מכל הכתבות.</p>
+  </section>
+
+  <form class="filters-card moderation-toolbar" id="moderation-filters"> <%# Collect search and visibility filters for the moderation API. %>
+    <label> <%# Label the free-text search control. %>
+      חיפוש בתוכן התגובה או בשם המגיב
+      <input id="moderation-search" name="search" type="search" maxlength="100" placeholder="לדוגמה: עדכון">
+    </label>
+    <label> <%# Label the visibility filter. %>
+      הצגה
+      <select id="moderation-status" name="status">
+        <% const statusLabels = { visible: "תגובות גלויות", deleted: "תגובות שהוסתרו", all: "כל התגובות" }; %> <%# Translate the accepted filter values into Hebrew labels. %>
+        <% for (const status of moderationStatuses) { %> <%# Build the options from the same list the server accepts. %>
+          <option value="<%= status %>"><%= statusLabels[status] || status %></option>
+        <% } %>
+      </select>
+    </label>
+    <button class="button button-primary" type="submit">חיפוש</button> <%# Reload the queue with the selected filters. %>
+    <button class="button button-secondary" id="moderation-clear" type="button">ניקוי</button> <%# Restore the default filters. %>
+  </form>
+
+  <p class="editor-message" id="moderation-message" role="status" aria-live="polite"></p> <%# Announce moderation results to assistive technology. %>
+
+  <section class="form-card" aria-labelledby="moderation-title"> <%# Show the filtered moderation queue. %>
+    <div class="section-heading"> <%# Keep the queue title and count together. %>
+      <div>
+        <div class="eyebrow">QUEUE</div>
+        <h2 id="moderation-title">תגובות</h2>
+      </div>
+      <span class="status-pill" id="moderation-total">0</span> <%# Show the total number of matching comments. %>
+    </div>
+    <div class="moderation-list" id="moderation-list" aria-live="polite"> <%# Let JavaScript replace the loading state with comment cards. %>
+      <p class="loading-indicator">טוען תגובות...</p> <%# Give feedback before the first API response. %>
+    </div>
+    <div class="comments-footer"> <%# Hold the load-more control for long queues. %>
+      <button class="button button-secondary" id="moderation-load-more" type="button" hidden>טעינת תגובות נוספות</button>
+    </div>
+  </section>
+</main>
+
+<!-- Load the moderation actions after the page structure is ready. -->
+<script src="/js/comments-moderation.js" defer></script>
+<%- include("../partials/footer") %> <%# Close the shared HTML document. %>

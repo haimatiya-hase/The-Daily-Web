@@ -1,7 +1,8 @@
-// Load Mongoose, the article model, the shared error class, and the article-page services.
+// Load Mongoose, the article model, the shared error class, the device-key helper, and the article-page services.
 const mongoose = require("mongoose");
 const Article = require("../models/article.model");
 const HttpError = require("../utils/http-error");
+const { readClientKey } = require("../utils/client-key");
 const commentService = require("../services/comment.service");
 const { recordArticleView, getArticleDailyViews } = require("../services/analytics.service");
 
@@ -16,14 +17,6 @@ const formatDate = (value, formatter) => {
   const date = new Date(value);
   // Hide invalid dates instead of rendering broken text.
   return Number.isNaN(date.getTime()) ? "" : formatter.format(date);
-};
-
-// Identify the requesting device with the anonymous browser key or a network fallback.
-const readClientKey = (req) => {
-  // Prefer the anonymous localStorage key that the browser sends in a header.
-  const headerKey = String(req.get?.("X-Client-Key") || "").trim().slice(0, 100);
-  // Fall back to the request address so the comment limit still works without browser storage.
-  return headerKey || `ip:${req.ip || "unknown"}`;
 };
 
 // Read one approved article with only its public fields.
@@ -51,8 +44,11 @@ const showArticle = async (req, res, next) => {
       throw new HttpError(404, "הכתבה המבוקשת לא נמצאה או שעדיין לא פורסמה.");
     }
 
-    // Read the newest visible comments so the list is part of the first HTML response.
-    const comments = await commentService.listArticleComments(article._id);
+    // Read the first comment page and the full count together so both are part of the first HTML response.
+    const [commentPage, commentsTotal] = await Promise.all([
+      commentService.listArticleComments(article._id),
+      commentService.countArticleComments(article._id)
+    ]);
     // Use only the approved public version for every rendered field.
     const published = article.publishedVersion;
 
@@ -81,10 +77,14 @@ const showArticle = async (req, res, next) => {
         viewCount: article.viewCount || 0
       },
       // Add a formatted time to each server-rendered comment.
-      comments: comments.map((comment) => ({
+      comments: commentPage.comments.map((comment) => ({
         ...comment,
         createdAtText: formatDate(comment.createdAt, commentDateFormat)
-      }))
+      })),
+      // Show the real total even when only the first page is rendered.
+      commentsTotal,
+      // Let the load-more button continue exactly after the rendered page.
+      commentsNextCursor: commentPage.nextCursor
     });
   } catch (error) {
     // Let the shared middleware render the safe error page.
@@ -111,79 +111,6 @@ const recordView = async (req, res, next) => {
     });
 
     // Return an empty success because the beacon needs no response body.
-    res.status(204).end();
-  } catch (error) {
-    next(error);
-  }
-};
-
-// Return the visible comments of one public article as JSON.
-const listComments = async (req, res, next) => {
-  try {
-    // Confirm the article is public before exposing its comments.
-    const article = await findPublishedArticle(req.params.articleId, "_id");
-
-    if (!article) {
-      throw new HttpError(404, "הכתבה לא נמצאה.");
-    }
-
-    // Send the newest visible comments in the shared public shape.
-    res.json({ comments: await commentService.listArticleComments(article._id) });
-  } catch (error) {
-    next(error);
-  }
-};
-
-// Create one guest comment through AJAX without reloading the page.
-const createComment = async (req, res, next) => {
-  try {
-    // Allow comments only on articles that readers can actually see.
-    const article = await findPublishedArticle(req.params.articleId, "_id");
-
-    if (!article) {
-      throw new HttpError(404, "הכתבה לא נמצאה.");
-    }
-
-    // Validate, rate limit, and store the comment inside the service.
-    const comment = await commentService.createGuestComment({
-      articleId: article._id,
-      payload: req.body,
-      clientKey: readClientKey(req)
-    });
-
-    // Return the stored comment so the browser can show it immediately.
-    res.status(201).json({ comment });
-  } catch (error) {
-    next(error);
-  }
-};
-
-// Let an editor correct one comment as part of full comment CRUD.
-const updateComment = async (req, res, next) => {
-  try {
-    // Reject malformed identifiers before querying MongoDB.
-    if (!mongoose.isValidObjectId(req.params.commentId)) {
-      throw new HttpError(404, "התגובה לא נמצאה.");
-    }
-
-    // Save the moderated text and return the updated public shape.
-    res.json({ comment: await commentService.updateCommentBody(req.params.commentId, req.body?.body) });
-  } catch (error) {
-    next(error);
-  }
-};
-
-// Let an editor hide one comment with soft deletion.
-const deleteComment = async (req, res, next) => {
-  try {
-    // Reject malformed identifiers before querying MongoDB.
-    if (!mongoose.isValidObjectId(req.params.commentId)) {
-      throw new HttpError(404, "התגובה לא נמצאה.");
-    }
-
-    // Mark the comment as deleted while keeping database history.
-    await commentService.softDeleteComment(req.params.commentId);
-    // Return an empty success because the browser only removes the item.
     res.status(204).end();
   } catch (error) {
     next(error);
@@ -231,12 +158,4 @@ const getArticleAnalytics = async (req, res, next) => {
   }
 };
 
-module.exports = {
-  showArticle,
-  recordView,
-  listComments,
-  createComment,
-  updateComment,
-  deleteComment,
-  getArticleAnalytics
-};
+module.exports = { showArticle, recordView, getArticleAnalytics };

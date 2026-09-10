@@ -20,6 +20,9 @@
 /* Make sizing predictable on every page. */
 * { box-sizing: border-box; }
 
+/* Keep the HTML hidden attribute working even on elements whose class sets a display value. */
+[hidden] { display: none !important; }
+
 /* Keep anchor scrolling smooth for the home feed link. */
 html { scroll-behavior: smooth; }
 
@@ -934,3 +937,52 @@ code { padding: 3px 7px; border-radius: 6px; color: var(--accent); background: r
 
 /* Keep the chart legend on one quiet line. */
 .analytics-legend { margin-top: 10px; }
+
+/* Center the load-more control under a comment thread or the moderation queue. */
+.comments-footer { display: grid; justify-items: center; gap: 8px; margin-top: 22px; }
+
+/* Lay out the moderation filters: wide search, filter, then the two buttons. */
+.moderation-toolbar { grid-template-columns: 2fr 1fr auto auto; align-items: end; }
+
+/* Stack moderation cards with breathing room. */
+.moderation-list { display: grid; gap: 14px; }
+
+/* Present one reader comment as a moderation card. */
+.moderation-item { display: grid; gap: 10px; padding: 16px 18px; border: 1px solid var(--line); border-radius: 14px; background: rgba(6, 11, 23, 0.58); }
+
+/* Dim hidden comments so their state is obvious at a glance. */
+.moderation-item.is-deleted { border-style: dashed; opacity: 0.72; }
+
+/* Keep the commenter identity and the visibility pill on one row. */
+.moderation-item-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+
+/* Show the commenter name and time together. */
+.moderation-item-header div { display: grid; gap: 2px; }
+.moderation-item-header strong { color: var(--ink); }
+
+/* Keep the comment time small and quiet. */
+.moderation-meta { color: var(--muted); font-size: 11px; }
+
+/* Link each comment to the article it belongs to. */
+.moderation-article { color: var(--accent); font-size: 12px; font-weight: 700; text-decoration: none; }
+.moderation-article:hover { text-decoration: underline; }
+
+/* Keep the comment text readable and safe from overflow. */
+.moderation-body { margin: 0; color: var(--muted-strong); white-space: pre-wrap; overflow-wrap: anywhere; }
+
+/* Let the inline editor use the full card width. */
+.moderation-editor { width: 100%; }
+
+/* Keep moderation buttons compact and wrappable. */
+.moderation-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.moderation-actions .button { min-height: 38px; padding-inline: 16px; }
+
+/* Reflow the moderation screen on tablets and phones. */
+@media (max-width: 900px) {
+  .moderation-toolbar { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 780px) {
+  .moderation-toolbar { grid-template-columns: 1fr; }
+  .moderation-item-header { align-items: start; flex-direction: column; }
+  .moderation-actions .button { width: 100%; }
+}

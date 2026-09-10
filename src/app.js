@@ -4,6 +4,7 @@ const path = require("node:path");
 const webRoutes = require("./routes/web.routes");
 const apiRoutes = require("./routes/api.routes");
 const editorRoutes = require("./routes/editor.routes");
+const commentRoutes = require("./routes/comment.routes");
 const logger = require("./utils/logger");
 const { notFoundHandler, errorHandler } = require("./middleware/error.middleware");
 // Load the middleware that restores users from persistent session cookies.
@@ -55,6 +56,8 @@ function createApp() {
 
   // Mount API routes before browser routes.
   app.use("/api/editor", editorRoutes);
+  // Mount comment moderation routes owned by the article area.
+  app.use("/api/comments", commentRoutes);
   // Mount general JSON routes such as health, weather, and reporter actions.
   app.use("/api", apiRoutes);
   // Mount browser pages such as home, login, reporter, and editor.
