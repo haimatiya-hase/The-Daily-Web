@@ -137,7 +137,19 @@ an updated article is being reviewed.
 - Editors moderate comments on `/editor/comments`: text search across all
   articles (MongoDB text index), a visible/hidden filter, inline editing,
   soft deletion, and restore. Every action records the acting editor.
-- Every article visit stores one view event and atomically increments the counter.
+- Every article visit is counted on the server while the page renders, so it is
+  recorded even without browser JavaScript; crawlers are filtered by user agent.
+  The device is identified by a first-party cookie that the page syncs into
+  localStorage, so the feed's viewed/unviewed filter keeps matching.
+- Views are stored three ways, each optimized for one question: a raw
+  `ViewEvent` per visit (device-level questions, expires after 180 days), an
+  hourly `ViewStat` bucket per article updated with one atomic `$inc` (charts
+  read a handful of documents no matter the traffic), and `viewCount` on the
+  article (popularity sort). One visit costs three O(1) writes.
+- Editors manage the statistics model on `/editor/views`: list and search
+  published articles with total / 24h / 7d views, see the per-version
+  breakdown, rebuild the buckets and counter from the raw events (Update), or
+  reset an article's view data (Delete).
 - The editor Impact Analytics panel draws daily views on a canvas chart and marks
   every point where an editor approved and published a version.
 
@@ -199,7 +211,8 @@ The seed creates or updates:
 - published and working versions for update scenarios;
 - close to 400 demo comments spread over two weeks, including long threads for
   pagination and hidden comments for the moderation screen;
-- 14 days of view events for analytics testing.
+- 30 days of view events with hourly spread for every published article, dense
+  on the first twelve, with hourly buckets built by the rebuild action.
 
 The seeded stories use category-specific public photos and realistic newsroom
 display names, so the public feed looks closer to a real news product during
@@ -238,6 +251,15 @@ Image upload (reporters and editors, raw image body, no external library):
 
 ```text
 POST /api/uploads/images    Content-Type: image/png | image/jpeg | image/webp | image/gif
+```
+
+View statistics endpoints (editor only):
+
+```text
+GET    /api/views?search=&sort=&page=      list published articles with totals
+GET    /api/views/:articleId               summary, recent activity, by version
+POST   /api/views/:articleId/rebuild       recompute buckets and counter from events
+DELETE /api/views/:articleId               delete all view data of the article
 ```
 
 Comment endpoints:
