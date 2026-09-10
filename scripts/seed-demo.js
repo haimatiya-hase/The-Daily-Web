@@ -301,10 +301,14 @@ async function refreshDemoRelatedData(articles) {
   publishedForComments.forEach((article, articleIndex) => {
     // Give the first three articles long threads so the load-more button appears, and a short spread elsewhere.
     const threadSize = articleIndex === 0 ? 35 : articleIndex === 1 ? 28 : articleIndex === 2 ? 24 : (articleIndex * 7) % 6;
+    // Readers can only react after the article first went public.
+    const firstPublishedAt = new Date(article.publicationHistory?.[0]?.publishedAt || article.publishedVersion.publishedAt);
 
     for (let position = 0; position < threadSize; position += 1) {
       // Spread comments over the past days so the moderation queue and the thread have a natural order.
       const createdAt = new Date(Date.now() - (articleIndex * 3 + position) * 47 * 60 * 1000);
+      // Skip a comment that would land before the first publication.
+      if (createdAt < firstPublishedAt) continue;
       // Hide a few comments so the moderation screen has restore candidates.
       const isHidden = (articleIndex + position) % 9 === 0;
 
@@ -335,6 +339,8 @@ async function refreshDemoRelatedData(articles) {
     const finalVersion = Number(article.publishedVersion.versionNumber) || 1;
     // Give the first twelve articles and every updated article dense traffic, and the rest a light background.
     const isDense = articleIndex < 12 || finalVersion > 1;
+    // Views can only exist after the article first went public.
+    const firstPublishedAt = new Date(article.publicationHistory?.[0]?.publishedAt || article.publishedVersion.publishedAt);
 
     for (let day = 0; day < 30; day += 1) {
       // Match the version to the publication times: updates went live seven days ago and two days ago.
@@ -351,6 +357,8 @@ async function refreshDemoRelatedData(articles) {
         const hour = 8 + ((count * 5 + day * 3 + articleIndex) % 14);
         const minute = (count * 7 + articleIndex) % 60;
         const viewedAt = new Date(Date.now() - day * DAY_MS - ((23 - hour) * 60 + minute) * 60 * 1000);
+        // Skip a view that would land before the first publication.
+        if (viewedAt < firstPublishedAt) continue;
         // Use a stable hash so the seeded client identifier is not stored openly.
         const clientKey = `demo-view-${article._id}-${day}-${count}`;
 
