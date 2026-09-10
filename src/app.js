@@ -4,6 +4,7 @@ const path = require("node:path");
 const webRoutes = require("./routes/web.routes");
 const apiRoutes = require("./routes/api.routes");
 const editorRoutes = require("./routes/editor.routes");
+const uploadRoutes = require("./routes/upload.routes");
 const commentRoutes = require("./routes/comment.routes");
 const logger = require("./utils/logger");
 const { notFoundHandler, errorHandler } = require("./middleware/error.middleware");
@@ -56,6 +57,8 @@ function createApp() {
 
   // Mount API routes before browser routes.
   app.use("/api/editor", editorRoutes);
+  // Mount staff image uploads before the general API router.
+  app.use("/api/uploads", uploadRoutes);
   // Mount comment moderation routes owned by the article area.
   app.use("/api/comments", commentRoutes);
   // Mount general JSON routes such as health, weather, and reporter actions.

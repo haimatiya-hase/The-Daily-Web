@@ -124,6 +124,10 @@ an updated article is being reviewed.
 
 ### Public article page, comments, and analytics
 
+- Reporters can upload the main image from their computer: the picker is limited
+  to JPG, PNG, WebP, and GIF, the server checks the real file signature and a 5MB
+  limit, stores the file under a random name in `public/uploads/`, and the form
+  keeps working with a typed address as well.
 - Server-rendered article page: the full approved content is in the initial HTML.
 - Guest comments are added through AJAX and appear immediately without a reload.
 - The server blocks a fourth comment within one minute from the same device (429)
@@ -228,6 +232,12 @@ Health check:
 
 ```text
 GET http://localhost:3000/api/health
+```
+
+Image upload (reporters and editors, raw image body, no external library):
+
+```text
+POST /api/uploads/images    Content-Type: image/png | image/jpeg | image/webp | image/gif
 ```
 
 Comment endpoints:

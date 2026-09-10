@@ -986,3 +986,13 @@ code { padding: 3px 7px; border-radius: 6px; color: var(--accent); background: r
   .moderation-item-header { align-items: start; flex-direction: column; }
   .moderation-actions .button { width: 100%; }
 }
+
+/* Group the file picker, its explanation, and the preview under the image address. */
+.reporter-image-upload { display: grid; gap: 10px; }
+
+/* Make the native file picker fit the dark form design. */
+input[type="file"] { padding: 9px 13px; cursor: pointer; }
+input[type="file"]::file-selector-button { margin-inline-end: 12px; padding: 6px 14px; border: 1px solid var(--line-strong); border-radius: 8px; color: var(--accent); background: rgba(96, 245, 210, 0.08); font: inherit; cursor: pointer; }
+
+/* Show the chosen image at a comfortable size without stretching it. */
+.reporter-image-preview { display: block; max-width: 320px; max-height: 200px; border: 1px solid var(--line); border-radius: 12px; object-fit: cover; background: var(--paper-soft); }

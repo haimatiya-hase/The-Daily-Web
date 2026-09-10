@@ -48,8 +48,17 @@
 
         <label> <%# Label the main image address. %>
           כתובת תמונה
-          <input name="imageUrl" type="text" value="<%= article.workingVersion.imageUrl %>" maxlength="1000" required> <%# Edit the main image URL or local path. %>
+          <input name="imageUrl" id="reporter-image-url" type="text" value="<%= article.workingVersion.imageUrl %>" maxlength="1000" required> <%# Edit the main image URL or local path. %>
         </label>
+      </div>
+
+      <div class="reporter-image-upload"> <%# Let the reporter pick an image file instead of typing an address. %>
+        <label> <%# Label the file picker. %>
+          העלאת תמונה מהמחשב
+          <input id="reporter-image-file" type="file" accept="image/jpeg,image/png,image/webp,image/gif"> <%# Open the system picker limited to supported image formats. %>
+        </label>
+        <p class="form-note" id="reporter-image-status">ניתן להעלות JPG, PNG, WebP או GIF עד 5MB. הכתובת תתמלא אוטומטית.</p> <%# Explain the accepted formats and what happens after upload. %>
+        <img class="reporter-image-preview" id="reporter-image-preview" src="<%= article.workingVersion.imageUrl %>" alt="תצוגה מקדימה של תמונת הכתבה" <%= article.workingVersion.imageUrl ? "" : "hidden" %>> <%# Show the current or newly uploaded image. %>
       </div>
 
       <label> <%# Label the full article body. %>
