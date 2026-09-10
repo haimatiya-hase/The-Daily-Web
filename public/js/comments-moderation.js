@@ -269,6 +269,8 @@
   });
   // Append the next page after the last loaded comment.
   elements.loadMore.addEventListener("click", () => loadQueue({ append: true }));
+  // Refresh the queue when the browser restores this page from its back/forward cache.
+  window.addEventListener("pageshow", (event) => { if (event.persisted) loadQueue(); });
   // Load the first queue page as soon as the page is ready.
   loadQueue();
 })();

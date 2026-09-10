@@ -43,8 +43,9 @@ const requireArticleObjectId = (articleId) => {
 
 // Record one article view with three small writes that stay fast under heavy traffic.
 const recordArticleView = async ({ articleId, publicationVersion, clientKey, userAgent, viewedAt = new Date() }) => {
-  // Skip crawlers so statistics describe readers rather than search engines.
+  // Skip crawlers so statistics describe readers rather than search engines, and say so in the log so a skipped view is never silent.
   if (isBotUserAgent(userAgent)) {
+    logger.info("Article view skipped for crawler", { articleId: String(articleId), userAgent: String(userAgent || "").slice(0, 200) });
     return { recorded: false, reason: "bot" };
   }
 

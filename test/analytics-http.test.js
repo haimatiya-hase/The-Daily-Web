@@ -57,3 +57,11 @@ test("the old editor analytics route is gone and other node_modules files are no
   const other = await get("/vendor/express/package.json");
   assert.equal(other.status, 404); // Confirm only the Chart.js dist folder is mounted.
 });
+
+test("API responses forbid browser caching so counters are always fresh after back navigation", async (context) => { // Verify the regression that hid new views on the statistics page.
+  const get = await startApp(context);
+  const response = await get("/api/health", { Accept: "application/json" });
+
+  assert.equal(response.status, 200); // Confirm the endpoint answers.
+  assert.equal(response.headers["cache-control"], "no-store"); // Confirm browsers must refetch every API response.
+});

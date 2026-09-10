@@ -32,6 +32,12 @@ function createApp() {
   // Restore the connected user before views and protected routes use req.user.
   app.use(loadSessionUser);
 
+  // Never let browsers reuse API responses from their cache; counters and queues must always be fetched fresh.
+  app.use("/api", (req, res, next) => {
+    res.set("Cache-Control", "no-store");
+    next();
+  });
+
   // Set values that every EJS page can use.
   app.use((req, res, next) => {
     // Make the application name available to every EJS template.

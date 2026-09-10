@@ -229,6 +229,9 @@
     }
   };
 
+  // Redraw with fresh numbers when the browser restores this page from its back/forward cache.
+  window.addEventListener("pageshow", (event) => { if (event.persisted) load(); });
+
   // Redraw whenever the page selects an article.
   document.addEventListener("editor:article-selected", (event) => {
     articleId = event.detail.articleId;
