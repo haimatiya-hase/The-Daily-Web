@@ -77,6 +77,61 @@
     saveTimer = window.setTimeout(saveArticle, 800); // Save 800 milliseconds after the last change.
   }
 
+  const imageFileInput = document.querySelector("#reporter-image-file"); // Find the file picker for the main image.
+  const imageUrlInput = document.querySelector("#reporter-image-url"); // Find the image address field that autosave reads.
+  const imageStatus = document.querySelector("#reporter-image-status"); // Find the upload feedback line.
+  const imagePreview = document.querySelector("#reporter-image-preview"); // Find the image preview element.
+  const allowedImageTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"]; // Mirror the formats accepted by the server.
+  const maxImageBytes = 5 * 1024 * 1024; // Mirror the server size limit so most problems are caught before uploading.
+
+  const showImageStatus = (message, isError = false) => { // Update the upload feedback without inserting HTML.
+    if (!imageStatus) return; // Stop when the page has no status element.
+    imageStatus.textContent = message; // Show the latest upload state.
+    imageStatus.classList.toggle("error-text", isError); // Highlight only error messages.
+  };
+
+  const showImagePreview = (url) => { // Show the current image address as a preview.
+    if (!imagePreview) return; // Stop when the page has no preview element.
+    imagePreview.src = url; // Load the image from its public address.
+    imagePreview.hidden = !url; // Hide the preview when there is no image.
+  };
+
+  const uploadImage = async (file) => { // Send one selected file to the upload API and fill the address field.
+    if (!allowedImageTypes.includes(file.type)) { // Reject unsupported formats before contacting the server.
+      showImageStatus("ניתן להעלות רק תמונות מסוג JPG, PNG, WebP או GIF.", true);
+      return;
+    }
+    if (file.size > maxImageBytes) { // Reject oversized files before contacting the server.
+      showImageStatus("התמונה גדולה מדי. ניתן להעלות עד 5MB.", true);
+      return;
+    }
+
+    showImageStatus("מעלה תמונה..."); // Show upload progress.
+    imageFileInput.disabled = true; // Prevent a second upload while this one runs.
+
+    try { // Handle validation and network failures on the same page.
+      const response = await fetch("/api/uploads/images", { method: "POST", headers: { "Content-Type": file.type, Accept: "application/json" }, body: file }); // Send the raw file bytes; the server validates the real format.
+      const result = await readResponse(response); // Read the stored image address or the error message.
+      if (!response.ok) throw new Error(result.error?.message || result.message || "העלאת התמונה נכשלה."); // Read the shared API error format and keep a safe fallback.
+      imageUrlInput.value = result.imageUrl; // Fill the address field with the stored image path.
+      imageUrlInput.dispatchEvent(new Event("input", { bubbles: true })); // Let the existing autosave notice the change.
+      showImagePreview(result.imageUrl); // Show the uploaded image immediately.
+      showImageStatus("התמונה הועלתה ונשמרה בכתבה."); // Confirm the upload.
+    } catch (error) { // Keep the previous address when the upload fails.
+      showImageStatus(error.message || "העלאת התמונה נכשלה.", true);
+    } finally { // Always allow another attempt.
+      imageFileInput.disabled = false;
+      imageFileInput.value = ""; // Let the reporter pick the same file again if needed.
+    }
+  };
+
+  imageFileInput?.addEventListener("change", () => { // Upload as soon as the reporter picks a file.
+    const file = imageFileInput.files?.[0]; // Read the selected file.
+    if (file && editable) void uploadImage(file); // Upload only when the article is editable.
+  });
+
+  imageUrlInput?.addEventListener("change", () => showImagePreview(imageUrlInput.value.trim())); // Refresh the preview when the address is typed by hand.
+
   if (editable) form.addEventListener("input", queueAutosave); // Watch text changes only when editing is allowed.
   if (editable) form.addEventListener("change", queueAutosave); // Watch select changes only when editing is allowed.
 
