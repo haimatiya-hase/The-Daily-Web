@@ -5,6 +5,8 @@ const User = require("../src/models/user.model");
 const Article = require("../src/models/article.model");
 const Comment = require("../src/models/comment.model");
 const ViewEvent = require("../src/models/view-event.model");
+const ViewStat = require("../src/models/view-stat.model");
+const { rebuildArticleViewStats } = require("../src/services/view.service");
 const { hashPassword } = require("../src/utils/password");
 const { hashClientKey } = require("../src/utils/client-key");
 
@@ -250,7 +252,7 @@ async function upsertDemoArticles(reporters, editor) {
               : "",
             publicationHistory,
             revisionNumber: versionNumber,
-            viewCount: hasPublishedVersion ? index * 7 : 0
+            viewCount: 0 // The rebuild step below sets the real counter from the seeded view events.
           }
         },
         upsert: true
@@ -273,9 +275,13 @@ async function refreshDemoRelatedData(articles) {
   // Keep related demo documents limited to the articles selected by this run.
   const articleIds = articles.map((article) => article._id);
 
+  // Align the statistics and comment indexes with the current schemas before writing demo data.
+  await Promise.all([ViewEvent.syncIndexes(), ViewStat.syncIndexes(), Comment.syncIndexes()]);
+
   // Delete only records connected to the 500 marked demo articles.
   await Comment.deleteMany({ article: { $in: articleIds } }).exec();
   await ViewEvent.deleteMany({ article: { $in: articleIds } }).exec();
+  await ViewStat.deleteMany({ article: { $in: articleIds } }).exec();
 
   // Add realistic comment threads so pagination, search, and moderation can be demonstrated.
   const commentBodies = [
@@ -318,27 +324,33 @@ async function refreshDemoRelatedData(articles) {
   // Report how many comments this run created so the summary line stays honest.
   const commentCount = commentDocuments.length;
 
-  // Add a fourteen-day view timeline for published demo articles.
-  const publishedArticles = articles
-    .filter((article) => article.status === "published")
-    .slice(0, 12);
+  // Add a thirty-day view timeline with hourly detail so the statistics screen and the graph have real data.
+  const publishedArticles = articles.filter((article) => article.status === "published");
   const viewEvents = [];
+  const DAY_MS = 24 * 60 * 60 * 1000;
 
   for (const [articleIndex, article] of publishedArticles.entries()) {
     // Use the approved version when attaching views to each demo article.
     const finalVersion = Number(article.publishedVersion.versionNumber) || 1;
+    // Give the first twelve articles dense traffic and the rest a light background so popularity has real data.
+    const isDense = articleIndex < 12;
 
-    for (let day = 0; day < 14; day += 1) {
-      // Create one event day at a time for the analytics timeline.
-      const viewedAt = new Date(Date.now() - day * 24 * 60 * 60 * 1000);
+    for (let day = 0; day < 30; day += 1) {
+      // Views before the update belong to the previous version; the demo updates were published seven days ago.
       const publicationVersion = finalVersion > 1 && day >= 7 ? 1 : finalVersion;
       // Vary the daily totals and add a clear uplift after an approved update.
-      const dailyViews = 2 + ((day + articleIndex) % 4) + (finalVersion > 1 && day < 7 ? 4 : 0);
+      const dailyViews = isDense
+        ? 2 + ((day + articleIndex) % 4) + (finalVersion > 1 && day < 7 ? 4 : 0)
+        : (day * 7 + articleIndex) % 3;
 
       for (let count = 0; count < dailyViews; count += 1) {
-        // Add several anonymous sample views for this article and day.
+        // Spread the views over daytime hours so hourly buckets show a realistic rhythm.
+        const hour = 8 + ((count * 5 + day * 3 + articleIndex) % 14);
+        const minute = (count * 7 + articleIndex) % 60;
+        const viewedAt = new Date(Date.now() - day * DAY_MS - ((23 - hour) * 60 + minute) * 60 * 1000);
         // Use a stable hash so the seeded client identifier is not stored openly.
         const clientKey = `demo-view-${article._id}-${day}-${count}`;
+
         viewEvents.push({
           article: article._id,
           publicationVersion,
@@ -352,17 +364,10 @@ async function refreshDemoRelatedData(articles) {
 
   await ViewEvent.insertMany(viewEvents);
 
-  // Keep each article popularity counter equal to its seeded view events.
-  const viewTotals = new Map();
-  for (const event of viewEvents) {
-    // Count the events that belong to each demo article.
-    const key = String(event.article);
-    viewTotals.set(key, (viewTotals.get(key) || 0) + 1);
+  // Build the hourly buckets and align every counter through the same code the editor's rebuild action uses.
+  for (const article of publishedArticles) {
+    await rebuildArticleViewStats(article._id);
   }
-  await Promise.all(
-    // Update only the articles that received seeded events.
-    [...viewTotals].map(([articleId, total]) => Article.updateOne({ _id: articleId }, { $set: { viewCount: total } }))
-  );
 
   return { commentCount };
 }
