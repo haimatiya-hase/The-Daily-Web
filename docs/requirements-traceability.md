@@ -91,4 +91,4 @@
 ### Still pending from other project areas
 
 - The public article page, comments, view statistics, and Impact Analytics are implemented; see `docs/itay-article-comments-views-analytics-walkthrough.md`.
-- The viewed/unviewed filter consumes the view events that the article page records on the server under the device cookie, which the page syncs into localStorage.
+- The Home page creates the shared device cookie before the first feed request, and both the Home Feed and article page sync it with localStorage. The viewed/unviewed filter therefore consumes the same view events after normal navigation or browser Back.

@@ -79,9 +79,12 @@ viewed/unviewed lookup.
 ## Integration with the article area
 
 Itay owns the public article page and the action that records a `ViewEvent`.
-That action must receive the same browser value stored under
-`dailyWebClientKey` and pass it to `recordArticleView`. Once those events are
-recorded, the Home Feed viewed/unviewed filter uses them automatically.
+The Home controller creates the shared `dailyWebDeviceKey` cookie before the
+first feed request. The browser copies that value to `dailyWebClientKey`, and
+the article page uses the same cookie when it calls `recordArticleView`.
+The feed reads the current cookie before every AJAX request, so the
+viewed/unviewed filter remains correct after opening an article and returning
+with the browser Back button.
 
 ## Browser behavior
 
@@ -102,11 +105,11 @@ npm run check
 npm test
 ```
 
-The focused feed tests verify the public data boundary, cursor ranges, search,
-both view filters, both sort modes, malformed cursor handling, and index
-definitions. Browser checks cover AJAX combinations, retry, clearing controls,
-and infinite scroll. CSS media rules move the toolbar and cards to one column
-on small screens.
+The focused feed tests verify the public data boundary, shared device cookie,
+cursor ranges, search, both view filters, both sort modes, malformed cursor
+handling, and index definitions. Browser checks cover AJAX combinations,
+retry, clearing controls, and infinite scroll. CSS media rules move the
+toolbar and cards to one column on small screens.
 
 ## Short defense explanation
 
