@@ -27,11 +27,26 @@
   let feedRequestVersion = 0; // Identify and ignore stale AJAX responses.
   let searchTimer; // Store the short search delay timer.
 
+  function readDeviceCookie() { // Read the anonymous key that the server uses when it records article views.
+    const prefix = "dailyWebDeviceKey="; // Match the shared first-party cookie name.
+    const part = document.cookie.split(";").map((item) => item.trim()).find((item) => item.startsWith(prefix)); // Find the matching cookie safely.
+    try { // Decode the stored value without letting malformed cookie text break the feed.
+      return part ? decodeURIComponent(part.slice(prefix.length)) : ""; // Return the cookie value without its name.
+    } catch (error) { // Recover from an invalid encoded cookie value.
+      return ""; // Let local storage provide the fallback key.
+    }
+  }
+
   // Reuse one anonymous browser key so view filters can match saved events.
   function getClientKey() { // Return one reusable anonymous key for this browser.
     const storageKey = "dailyWebClientKey"; // Keep the shared storage name in one place.
+    const cookieKey = readDeviceCookie(); // Prefer the key already used by the server-side view counter.
 
     try { // Recover safely when browser storage is unavailable.
+      if (cookieKey) { // Keep local storage aligned with the first-party device cookie.
+        if (localStorage.getItem(storageKey) !== cookieKey) localStorage.setItem(storageKey, cookieKey); // Replace an older feed-only key after the integration upgrade.
+        return cookieKey; // Use the same key for viewed and unviewed filtering.
+      }
       let value = localStorage.getItem(storageKey); // Reuse the browser key from an earlier visit.
       if (!value) { // Create a key only on the first visit.
         value = window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`; // Prefer a secure browser UUID and keep a simple fallback.
@@ -39,11 +54,9 @@
       }
       return value; // Return the existing or newly created browser key.
     } catch (error) { // Handle private browsing or blocked storage.
-      return ""; // Disable personal view filtering instead of breaking the feed.
+      return cookieKey; // Keep view filtering available when the cookie can still be read.
     }
   }
-
-  const clientKey = getClientKey(); // Read the anonymous key once for all feed requests.
 
   // Format a valid publication date for Hebrew readers.
   function formatPublishedDate(value) { // Format one approved date for Hebrew readers.
@@ -139,6 +152,7 @@
       if (activeViewStatus) parameters.set("viewStatus", activeViewStatus); // Send the selected viewed-state only when active.
       parameters.set("sort", activeSort); // Always tell the server which stable order to use.
       const headers = { Accept: "application/json" }; // Ask the API for its JSON response.
+      const clientKey = getClientKey(); // Read the current shared key before every request so restored pages stay synchronized.
       if (clientKey) headers["X-Client-Key"] = clientKey; // Send the anonymous browser key when storage is available.
       const response = await fetch(`/api/articles?${parameters}`, { headers }); // Request one feed page through AJAX.
       if (!response.ok) throw new Error("Feed request failed"); // Move failed HTTP responses into the normal recovery path.

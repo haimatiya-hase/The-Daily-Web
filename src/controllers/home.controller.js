@@ -1,7 +1,7 @@
 const mongoose = require("mongoose"); // Load Mongoose so cursor article IDs can be validated safely.
 const Article = require("../models/article.model"); // Load articles for the public home feed.
 const ViewEvent = require("../models/view-event.model"); // Load view events for viewed and unviewed filters.
-const { hashClientKey } = require("../utils/client-key"); // Load the helper that protects anonymous browser keys.
+const { ensureDeviceKey, hashClientKey } = require("../utils/client-key"); // Load helpers that create and protect anonymous browser keys.
 const HttpError = require("../utils/http-error"); // Load the shared class for safe HTTP errors.
 
 const FEED_PAGE_SIZE = 20; // Keep every feed page at the required twenty articles.
@@ -54,6 +54,7 @@ function addCursorFilter(filter, cursor, sortBy) { // Add the next-page range to
 }
 
 function showHome(req, res) { // Render the public news feed page shell.
+  ensureDeviceKey(req, res); // Give the feed and article page the same anonymous browser key from the first visit.
   res.render("pages/home", { // Send the home template and its shared page values.
     pageTitle: "חדשות היום", // Set a readable Hebrew browser title.
     activePage: "home" // Highlight Home in the shared navigation.

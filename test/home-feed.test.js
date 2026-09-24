@@ -2,8 +2,8 @@ const test = require("node:test"); // Load Node's built-in test runner.
 const assert = require("node:assert/strict"); // Load strict assertions for exact feed checks.
 const Article = require("../src/models/article.model"); // Load the shared model so its query can be replaced safely.
 const ViewEvent = require("../src/models/view-event.model"); // Load view events so visitor filters can be tested without MongoDB.
-const { hashClientKey } = require("../src/utils/client-key"); // Hash the test visitor like the real controller.
-const { getPublicFeed } = require("../src/controllers/home.controller"); // Load the public feed action under test.
+const { DEVICE_COOKIE_NAME, hashClientKey } = require("../src/utils/client-key"); // Load the shared device-key values used by feed integration checks.
+const { showHome, getPublicFeed } = require("../src/controllers/home.controller"); // Load the public page and feed actions under test.
 
 function createResponse() { // Build the small part of an Express response used by this controller.
   return { // Return a response object that records the JSON body.
@@ -11,6 +11,23 @@ function createResponse() { // Build the small part of an Express response used 
     json(body) { this.body = body; return this; } // Save the response body and keep Express-style chaining.
   };
 }
+
+test("home page creates the device cookie before the feed starts", () => { // Keep Home Feed view filters aligned with server-side article counting.
+  const req = { headers: {}, secure: false }; // Simulate a first public visit without an existing device cookie.
+  const calls = {}; // Record the cookie and template selected by the controller.
+  const res = { // Provide only the Express methods used by the page action.
+    cookie(name, value, options) { calls.cookie = { name, value, options }; }, // Capture the anonymous key sent to the browser.
+    render(view, data) { calls.render = { view, data }; } // Capture the normal home-page render.
+  };
+
+  showHome(req, res); // Open the public page through the real controller.
+
+  assert.equal(calls.cookie.name, DEVICE_COOKIE_NAME); // Confirm the feed receives the same cookie name as the article page.
+  assert.equal(typeof calls.cookie.value, "string"); // Confirm a real anonymous key was created.
+  assert.ok(calls.cookie.value.length > 0); // Confirm the key is not empty.
+  assert.equal(calls.cookie.options.path, "/"); // Confirm the key is available to both the feed and article routes.
+  assert.equal(calls.render.view, "pages/home"); // Confirm cookie creation does not interrupt page rendering.
+});
 
 test("public feed returns only approved fields from twenty published articles", async (context) => { // Verify the public data boundary and query limit.
   const originalFind = Article.find; // Keep the real database method for other tests.
