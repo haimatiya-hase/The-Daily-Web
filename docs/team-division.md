@@ -1,96 +1,41 @@
-# חלוקת עבודה מעודכנת ומאוזנת
+# Team ownership
 
-החלוקה המעודכנת מחלקת את המערכת לאזורים ברורים. לכל חבר יש אזור מוצר
-מרכזי שהוא מפתח מקצה לקצה: ממשק, JavaScript, routes, controllers, models
-או services, בדיקות ותיעוד.
+Each member owns an application area end to end: screen, browser behavior,
+server routes/controllers, data rules, tests, and explanation. This is an
+ownership map, not a claim that every requirement is already complete.
 
-## סיכום החלוקה
+| Member | GitHub | Area |
+| --- | --- | --- |
+| Haim Atiya | `haimatiya-hase` | Editor control room and content management |
+| Dor | `Ddd99913` | Reporter workspace and draft workflow |
+| Liri | `lirishavit` | Login, logout, users, permissions, sessions, weather |
+| Bremer | `shakedbremer` | Public feed, search, filters, sort, infinite scroll |
+| Itay | `upr256` | Public article, comments, views, Impact Analytics, image upload |
 
-| חבר/ה | אזור אחריות | זמן משוער | רמת קושי |
-| --- | --- | --- | --- |
-| לירי | Login/Auth, Users, Security ו-Weather | 23–26 שעות | ★★★★☆ |
-| ברמר | Home Feed, Search, Filter ו-Sort | 23–27 שעות | ★★★★☆ |
-| דור | Reporter Area | 25–28 שעות | ★★★★★ |
-| חיים | Editor Area וניהול תוכן | 24–27 שעות | ★★★★★ |
-| איתי | Article, Comments, Views ו-Analytics | 26–30 שעות | ★★★★★★ |
+The application login for Haim is `haimatiya`; it is different from the GitHub
+account name. See the original division document for the agreed assignment.
 
-## לירי — Login/Auth, Users, Security ו-Weather
+## Area boundaries
 
-- בניית מסך ההתחברות לכתבים ולעורכים.
-- מימוש Login, Logout ושמירת Session.
-- שמירת סיסמאות בצורה מאובטחת ולא כטקסט גלוי.
-- הגדרת Guest, Reporter ו-Editor והרשאות מתאימות.
-- Middleware ובדיקות הרשאה בצד השרת.
-- שמירת מצב ההתחברות גם לאחר Restart של השרת.
-- אחריות עיקרית על מודל User.
-- מימוש Weather Widget מול Web Service חיצוני, כולל cache של עד 15 דקות.
+- Reporter: own articles, new draft, autosave, submission, returned feedback,
+  and private updates to published articles.
+- Editor: all-article queue, pending corrections, approval/publication,
+  return with a note, article deletion, and comparison of both versions.
+- Authentication/weather: team accounts and roles, password/token hashing,
+  persistent sessions, protected routes, external weather and server cache.
+- Feed: approved content only, twenty-card pages, search, category and viewed
+  filters, date/popularity sorting, and AJAX UI states.
+- Article/data: full content in initial HTML, guest comments/rate limit,
+  moderation, entry recording, statistics, graphs, and image upload.
 
-## ברמר — Home Feed
+## Shared responsibilities
 
-- הצגת כתבות שאושרו ופורסמו בלבד.
-- Infinite Scroll עם טעינה של 20 כתבות נוספות בכל פעם.
-- חיפוש כתבות.
-- סינון לפי קטגוריה ולפי נצפה/לא נצפה.
-- מיון לפי תאריך פרסום או פופולריות.
-- חיפוש, סינון, מיון וטעינה באמצעות AJAX ללא רענון מלא.
-- Pagination ושאילתות MongoDB יעילות למאגר של אלפי כתבות.
+MVC, REST, MongoDB/Mongoose, responsive design, error handling, logs,
+integration tests, demonstration data, and Git history are team responsibilities.
+Each member must understand the full system, not only their own area.
 
-## דור — Reporter Area
-
-- הצגת הכתבות השייכות לכתב והסטטוס של כל כתבה.
-- יצירת כתבה חדשה ועריכת כתבה במצב בהכנה.
-- שליחת כתבה לאישור עורך.
-- הצגת הערת עורך כאשר כתבה מוחזרת לתיקונים והגשתה מחדש.
-- Autosave ושחזור הגרסה האחרונה לאחר רענון, סגירת דפדפן או מעבר למחשב אחר.
-- עריכת כתבה שפורסמה תוך שמירת הגרסה המאושרת לציבור עד אישור הגרסה החדשה.
-- אחריות על Article/Draft ועל מעברי הסטטוסים מצד הכתב.
-
-## חיים — Editor Area
-
-- הצגת כלל הכתבות במערכת וסינון לפי סטטוס.
-- צפייה ועריכה של תוכן שממתין לאישור.
-- אישור ופרסום כתבה.
-- החזרת כתבה לכתב לתיקונים בצירוף הערה.
-- מחיקת כתבה.
-- טיפול בעדכון של כתבה שפורסמה והבחנה בין התוכן המפורסם לגרסה החדשה.
-- אחריות על CRUD של Article מצד הניהול, מעברי סטטוסים ומקרי שגיאה.
-
-## איתי — Article, Comments, Views ו-Analytics
-
-- בניית עמוד הכתבה הציבורי עם תוכן מלא ב-HTML הראשוני.
-- הצגת תגובות והוספת תגובה חדשה באמצעות AJAX.
-- הגבלת אורח לעד 3 תגובות בדקה מאותו מכשיר ואכיפה בצד השרת.
-- ספירת כל כניסה לכתבה לצורך נתוני צפייה.
-- שמירת נתוני צפייה וסטטיסטיקות באופן שמתאים לאלפי קוראים במקביל.
-- בניית Impact Analytics עם צפיות לאורך זמן וסימון נקודות עדכון.
-- אחריות עיקרית על Comment ועל View/Statistics.
-
-## משימות משותפות
-
-- MVC, REST, MongoDB/Mongoose, Responsive Design, טיפול בשגיאות ולוגים.
-- Git: branches, commits תכופים, Pull Requests ו-merges מסודרים.
-- README: הוראות התקנה והרצה, מבנה הפרויקט ותיאור הפונקציונליות.
-- הכנת נתוני דמו: לפחות 500 כתבות, משתמשים, תגובות, סטטוסים, עדכונים ונתוני צפייה.
-- בדיקות אינטגרציה והכנה משותפת להגנה.
-- כל חבר צריך להכיר את כלל קוד המערכת ולהיות מסוגל להסביר אותו.
-
-## GitHub accounts
-
-| חבר/ה | GitHub |
-| --- | --- |
-| חיים | `haimatiya` |
-| לירי | `lirishavit` |
-| ברמר | `shakedbremer` |
-| איתי | `upr256` |
-| דור | `Ddd99913` |
-
-## Branches לפי אזור
-
-- לירי: `feature/liri-login-auth-users-weather`
-- ברמר: `feature/bremer-home-feed`
-- דור: `feature/dor-reporter`
-- חיים: `feature/haim-editor-area`
-- איתי: `feat/implement-article`, `feat/implement-comments`, `feat/implement-views`, `feat/implement-analytics`, `fix/article-image-upload`
-
-כל חבר עובד ב-branch שלו. שינויים ב-files משותפים מתבצעים רק לאחר תיאום
-ובאמצעות Pull Request.
+For current gaps (especially User CRUD and weather refresh), use
+[requirements traceability](requirements-traceability.md). For each area's
+actual functions, use the [application walkthrough](application-walkthrough.md).
+Branch and review conventions are in [Git workflow](branching-strategy.md).
+The [original updated division](project-division-updated.docx) is preserved.

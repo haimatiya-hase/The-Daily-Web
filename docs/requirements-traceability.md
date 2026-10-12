@@ -1,94 +1,68 @@
-# מעקב דרישות מול התשתית
+# Requirements traceability
 
-המסמך מפריד בין דרישות הפרויקט המקוריות לבין מה שהוקם כרגע.
+Source: [original project requirements](project-requirements.pdf).
+This describes the current code. A working feature does not prove every
+submission requirement or edge case is complete.
 
-| דרישה | מיקום בתשתית | מצב |
+## Implemented areas
+
+| Requirement | Current implementation | Evidence to inspect |
 | --- | --- | --- |
-| Node.js + Express | `src/server.js`, `src/app.js` | הוכן |
-| MVC | `src/controllers`, `src/models`, `src/views` | הוכן כשלד |
-| MongoDB + Mongoose | `src/config/database.js`, `src/models` | הוכן כשלד |
-| EJS ו-HTML5 סמנטי | `src/views` | הוכן כשלד |
-| Vanilla JS + AJAX | `public/js/reporter.js`, `public/js/editor.js`, `public/js/home.js`, `public/js/article.js`, `public/js/comments-moderation.js`, `public/js/views.js`, `public/js/analytics.js` | הושלם בכל האזורים: התחברות, מזג אוויר, כתב, עורך, פיד, עמוד כתבה, תגובות, סטטיסטיקות ואנליטיקה |
-| ארבעה מודלים עיקריים | `src/models` | הושלם: משתמשים, כתבות עם גרסאות, תגובות, נתוני צפייה (`ViewEvent`) וסטטיסטיקות שעתיות (`ViewStat`); לכל מודל CRUD מלא |
-| לוגים וטיפול שגיאות | `src/utils/logger.js`, `src/middleware` | הוכן |
-| סיסמאות לא גלויות | `src/utils/password.js`, `test/auth-security.test.js` | הושלם ונבדק עם salt ו-scrypt |
-| Login ו-Logout | `src/controllers/auth.controller.js`, `src/views/pages/login.ejs` | הושלם עם הודעת שגיאה בטוחה |
-| Guest, Reporter ו-Editor | `src/models/user.model.js`, `src/middleware/auth.middleware.js` | הושלם ונבדק בצד השרת |
-| שמירת session אחרי Restart | `src/models/session.model.js`, `src/services/session.service.js` | הושלם עם MongoDB ו-cookie מוגן |
-| פיד, חיפוש, סינון, מיון ו-infinite scroll | `src/controllers/home.controller.js`, `src/routes/api.routes.js`, `public/js/home.js` | הושלם עם AJAX, טעינה של 20, cursor pagination ואינדקסים מורכבים |
-| גרסאות כתבה ו-workflow | `src/models/article.model.js`, `src/services/article-workflow.service.js`, `src/controllers/reporter.controller.js` | מעברי הכתב והעורך הוכנו עם גרסה ציבורית נפרדת |
-| תגובות והגבלת 3 בדקה | `src/services/comment.service.js`, `src/controllers/comment.controller.js`, `public/js/article.js` | הושלם: הגבלה נאכפת בשרת לפי hash של מזהה המכשיר ומחזירה 429; תגובה חדשה מופיעה מיד ללא רענון; דפדוף cursor; ניהול תגובות לעורך ב-`/editor/comments` |
-| Impact Analytics | `src/models/view-stat.model.js`, `src/services/analytics.service.js`, `public/js/analytics.js` | הושלם: גרף Chart.js (מוגש מקומית) עם ציר זמן, רזולוציה שעתית/יומית, סימון כל פרסום ועדכון, וטבלת צפיות 24 שעות לפני/אחרי כל עדכון |
-| ספירת כל כניסה לכתבה וסטטיסטיקות | `src/services/view.service.js`, `src/controllers/view.controller.js`, `src/views/pages/views.ejs` | הושלם: ספירה בשרת בזמן הרינדור, cookie מכשיר, שלוש כתיבות O(1) לכל צפייה, מסך `/editor/views` עם חיפוש, פירוט לפי גרסה, חישוב מחדש ואיפוס |
-| עמוד כתבה נגיש למנועי חיפוש | `src/controllers/article.controller.js`, `src/views/pages/article.ejs` | הושלם: התוכן המלא המאושר ב-HTML הראשוני, 404 ידידותי לכתבה לא מפורסמת |
-| העלאת תמונה מהמחשב | `src/services/upload.service.js`, `src/routes/upload.routes.js` | הושלם: `express.raw` ללא ספרייה חיצונית, בדיקת חתימת קובץ, עד 5MB, שם אקראי ב-`public/uploads` |
-| Weather widget | `src/services/weather.service.js`, `src/routes/api.routes.js`, `public/js/home.js` | הושלם עם cache של עד 15 דקות ומצב שגיאה בטוח |
-| 500 כתבות ונתוני דמו | `scripts/seed-demo.js`, `docs/mongodb-setup.md` | seed חוזר ובטוח לנתוני דמו מסומנים |
+| Node.js, Express, MVC | Server, routes, controllers, models, EJS views, services | `src/server.js`, `src/app.js`, `src/` |
+| MongoDB and Mongoose | Six schemas; local MongoDB is the selected setup | Models and database configuration |
+| HTML5, EJS, responsive CSS | Server pages, shared partials, mobile media rules | `src/views/`, `public/css/main.css` |
+| Vanilla JS and AJAX | Feed, reporter, editor, comments, statistics, graph | `public/js/` |
+| Login/logout and roles | Server permission guards; persistent MongoDB sessions | Auth controller, middleware, session service, auth tests |
+| Password protection | Salted scrypt passwords and hashed session tokens | Password/session helpers and security tests |
+| Reporter workflow | Own articles, empty draft, autosave, submit, feedback, private update | Reporter controller/script and tests |
+| Editor workflow | Search/filter/page, edit pending work, approve, return, delete | Editor controller, workflow service and tests |
+| Public feed | Approved versions; 20-card cursor pages; search/filter/sort | Home controller/script and feed tests |
+| Public article | Full approved content and first comments in initial HTML | Article controller/template and tests |
+| Comments | AJAX, pagination, 3-per-minute browser-key limit, moderation | Comment service/controllers/scripts and tests |
+| View statistics | Entry recording; events, hourly buckets, total; list/rebuild/reset | View service/controller/script and tests |
+| Impact Analytics | Local Chart.js; time series, markers, before/after figures | Analytics service/script and tests |
+| Image upload | Role/signature checks, 5MB limit, random filename | Upload service/routes and tests |
+| Errors and logs | Common HTTP errors and structured process output | Error middleware and logger |
+| Demo dataset | 5 team users, 500 marked articles, comments, 30-day views | Seed script; read the reset warning in MongoDB setup |
+| Git and docs | Ownership, branches/PR workflow, setup and walkthrough | README/docs; confirm actual Git history before submission |
 
-## מיפוי דרישות — Reporter Area
+## Open requirements - do not mark complete
 
-| דרישת הכתב | מימוש | אימות |
-| --- | --- | --- |
-| הצגת הכתבות של הכתב בלבד והסטטוס שלהן | `showReporterDashboard`, שאילתה לפי `author`, `reporter.ejs` | בדיקת בעלות בבקר ובדיקת ממשק |
-| יצירת כתבה חדשה במצב `draft` | `POST /api/reporter/articles` | בדיקת בקר: הבעלות נלקחת מהמשתמש המחובר |
-| עריכת טיוטה ושמירה אוטומטית | `PUT` ו-`POST autosave`, `public/js/reporter.js` | בדיקת בקר ובדיקת ממשק בדפדפן |
-| שליחה לאישור עורך | `POST /api/reporter/articles/:articleId/submit` | בדיקה של מעבר ל-`pending_review` |
-| הצגת הערת עורך, תיקון והגשה מחדש | `editorNote`, סטטוס `changes_requested`, מסכי הכתב | בדיקת הרשאות המצבים ורינדור EJS |
-| חסימת עריכה בזמן בדיקת עורך וחסימת פרסום בידי כתב | `canReporterEdit`, `requireRole("reporter")` והיעדר פעולת publish | בדיקות בקר והגנת שרת |
-| עדכון כתבה שפורסמה בלי לשנות את הגרסה הציבורית לפני אישור | `workingVersion` נפרדת מ-`publishedVersion` | בדיקת יצירת גרסה פרטית חדשה |
+1. **User CRUD:** the User schema, authentication, and seeded accounts exist,
+   but a complete user-management create/read/update/delete API or screen does
+   not. CRUD for all main models still needs this decision and implementation.
+2. **Weather on an open page:** server cache defaults to 15 minutes, but
+   `home.js` does not periodically fetch weather. Expiry on the next request
+   is not a maximum display-age guarantee for a tab left open.
+3. **Submission evidence:** verify hand-in requirements, team participation,
+   personal Git history, demonstration, and allowed dependencies against the
+   original document. Unit tests alone do not establish these.
+4. **Browser and concurrency checks:** perform the final desktop/mobile demo,
+   session restart and incognito checks, approval, comment limits, upload,
+   filters, and analytics. Do not claim a measured thousands-of-readers load
+   test without performing one.
 
-## מיפוי דרישות — Home Feed
+## Limits to explain honestly
 
-| דרישת הפיד | מימוש | אימות |
-| --- | --- | --- |
-| הצגת כתבות שאושרו בלבד | סינון לפי `publishedVersion.publishedAt` ושימוש ב-`publishedVersion` בלבד, גם כאשר עדכון חדש נמצא בבדיקה | בדיקת בקר שמוודאת שאין דליפת `workingVersion` ושהגרסה המאושרת נשארת בפיד |
-| טעינה של 20 ו-infinite scroll | `nextCursor` ו-`IntersectionObserver` | בדיקת בקר ובדיקת 45 כתבות בדפדפן |
-| חיפוש כתבות | אינדקס text על כותרת ותקציר | בדיקת שאילתת MongoDB ובדיקת AJAX |
-| סינון קטגוריה ונצפה/לא נצפה | קטגוריה מאושרת ו-`ViewEvent` לפי מזהה אנונימי מוצפן | בדיקות לשני מצבי הצפייה |
-| מיון לפי תאריך או פופולריות | סדר יציב עם תאריך ו-`_id` כשוברי שוויון | בדיקות לשני סוגי המיון |
-| תמיכה באלפי כתבות | cursor pagination ואינדקסים מורכבים לפי צורות השאילתה | בדיקה שאין שימוש ב-`skip` ובדיקת הגדרות האינדקסים |
-| טיפול במצבי ממשק | טעינה, ריק, סוף, שגיאה, ניסיון חוזר וניקוי פילטרים | בדיקת דפדפן ללא רענון מלא |
+- Anonymous keys are **hashed**, not encrypted. They identify browser storage,
+  not a reliably unique physical person or device.
+- Comment count-then-insert is not atomic under simultaneous requests; replacing
+  a browser key also bypasses that identity's limit.
+- The three view writes are not one transaction. Rebuild uses retained events
+  only; raw events expire after 180 days.
+- Cursor tie breakers do not create an immutable live-feed snapshot.
+- Autosave can fail during network loss; page-exit saving is best effort.
+- Article deletion does not cascade to related data or uploaded files.
+- Logs go to process output, not a configured persistent log file.
+- Seed reruns overwrite marked demo records and related comments/views,
+  including manual activity on those records. Do not seed to start the server.
 
-## דרישות שצריך לאמת מול הצוות
+## Verification
 
-1. שכל חמשת הסטודנטים רשומים לאותו מרצה — אושר על ידי הקבוצה.
-2. אילו חבילות נוספות נלמדו ומותרות בקורס, במיוחד עבור session, העלאת
-   תמונות וגרפים.
-3. מסמך הדרישות מחייב MongoDB ו-Mongoose, אך אינו מחייב מקומי או Atlas.
-   נקודת הפתיחה שנבחרה היא MongoDB מקומי.
-4. חשבונות GitHub שנמסרו: `lirishavit`, `shakedbremer`, `upr256`,
-   `Ddd99913`. חשבון המאגר הוא `haimatiya`.
-5. `upr256` משויך לאיתי ו-`Ddd99913` משויך לדור.
+```bash
+npm run check
+npm test
+```
 
-## Audit of Liri, Dor, and Bremer work
-
-### Liri - Login/Auth, Users, Security and Weather
-
-- Login and logout are implemented with server-side role checks.
-- Passwords use salted `scrypt` hashes and are hidden from normal user output.
-- Sessions are stored in MongoDB as one-way token hashes, so they survive a server restart.
-- The weather API is free, server-side, and cached for no more than fifteen minutes.
-- A malformed session cookie is ignored safely instead of crashing the request.
-- Expired weather data is not shown after an external service failure.
-
-### Dor - Reporter Area
-
-- Reporters can read and change only their own articles.
-- The allowed workflow transitions are enforced by the server.
-- Autosave and page-close saving keep the working version in MongoDB.
-- Published content stays separate from a reporter's private update until editor approval.
-- Required article fields and maximum lengths are checked before saving or submitting.
-- Malformed autosave bodies are converted into safe input instead of causing a server exception.
-
-### Bremer - Home Feed
-
-- Public cards use only the last approved article version.
-- Search, filters, sorting, and infinite scroll run through AJAX without a full reload.
-- Cursor pagination avoids increasingly expensive `skip` operations.
-- Query-specific indexes cover publication date, category, popularity, and anonymous view lookups.
-- Loading, empty, retry, and final-page states are handled in the browser.
-
-### Still pending from other project areas
-
-- The public article page, comments, view statistics, and Impact Analytics are implemented; see `docs/itay-article-comments-views-analytics-walkthrough.md`.
-- The Home page creates the shared device cookie before the first feed request, and both the Home Feed and article page sync it with localStorage. The viewed/unviewed filter therefore consumes the same view events after normal navigation or browser Back.
+All tests are in `test/`. Use the
+[application walkthrough](application-walkthrough.md) for the current code map.

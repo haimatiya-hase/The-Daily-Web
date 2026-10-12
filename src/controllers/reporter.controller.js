@@ -152,7 +152,7 @@ async function createReporterArticle(req, res, next) { // Create a new empty dra
     const article = await Article.create({ // Insert the new article in MongoDB.
       author: req.user._id, // Make the logged-in reporter the owner.
       status: "draft", // Start every new article in the editable draft state.
-      workingVersion: { versionNumber: 1, title: "", summary: "", content: "", imageUrl: "/images/demo-article.svg", category: "", createdAt: new Date() } // Create the first blank working version.
+      workingVersion: { versionNumber: 1, title: "", summary: "", content: "", imageUrl: "", category: "", createdAt: new Date() } // Start empty; the reporter must choose a real image before submission.
     });
     res.status(201).json({ articleId: article._id.toString(), editUrl: `/reporter/articles/${article._id}` }); // Return the new editor URL to the browser.
   } catch (error) { // Catch validation and database errors.

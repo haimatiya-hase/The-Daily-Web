@@ -3,7 +3,6 @@ const express = require("express");
 const { getDatabaseStatus } = require("../config/database");
 const homeController = require("../controllers/home.controller"); // Load the public feed action.
 const reporterController = require("../controllers/reporter.controller"); // Load the reporter REST actions.
-const articleController = require("../controllers/article.controller"); // Load the public article page REST actions.
 const commentController = require("../controllers/comment.controller"); // Load the public comment REST actions.
 const { requireRole } = require("../middleware/auth.middleware"); // Load server-side role protection.
 // Load the cached weather service used by the home page widget.

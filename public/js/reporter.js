@@ -92,7 +92,8 @@
 
   const showImagePreview = (url) => { // Show the current image address as a preview.
     if (!imagePreview) return; // Stop when the page has no preview element.
-    imagePreview.src = url; // Load the image from its public address.
+    if (url) imagePreview.src = url; // Load the selected image from its public address.
+    else imagePreview.removeAttribute("src"); // Avoid an image request when the address is empty.
     imagePreview.hidden = !url; // Hide the preview when there is no image.
   };
 

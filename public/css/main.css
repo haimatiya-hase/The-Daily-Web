@@ -357,7 +357,7 @@ h2, h3 { line-height: 1.15; }
 .section-heading h2 { margin: 5px 0 0; color: var(--ink); font-size: 30px; letter-spacing: -0.05em; }
 
 /* Use a soft pill for statuses and counters. */
-.status-pill, .weather-placeholder {
+.status-pill {
   display: inline-flex;
   align-items: center;
   gap: 7px;
@@ -446,15 +446,6 @@ input:disabled, select:disabled, textarea:disabled { cursor: not-allowed; opacit
 
 /* Keep the feed empty state intentional instead of looking unfinished. */
 .empty-state { padding: 46px 28px; text-align: center; }
-
-/* Draw three glowing circles as a simple feed loading mark. */
-.empty-visual { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 0 auto 24px; }
-
-/* Style each feed signal dot. */
-.empty-visual span { display: block; width: 11px; height: 11px; border: 1px solid var(--accent); border-radius: 50%; background: rgba(96, 245, 210, 0.18); box-shadow: 0 0 16px rgba(96, 245, 210, 0.3); }
-
-/* Offset the center dot for a small motion-like rhythm. */
-.empty-visual span:nth-child(2) { transform: translateY(-9px); }
 
 /* Keep empty state headings close to their description. */
 .empty-state h3, .empty-state h2 { margin: 10px 0; color: var(--ink); }
