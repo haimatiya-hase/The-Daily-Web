@@ -17,6 +17,8 @@
     content: document.querySelector("#editor-content"),
     category: document.querySelector("#editor-category"),
     imageUrl: document.querySelector("#editor-image-url"),
+    imagePreview: document.querySelector("#editor-image-preview"), // Find the frame for the selected article image.
+    imageStatus: document.querySelector("#editor-image-status"), // Find the image loading or error message.
     requestNote: document.querySelector("#editor-request-note"),
     save: document.querySelector("#editor-save"),
     publish: document.querySelector("#editor-publish"),
@@ -36,12 +38,58 @@
 
   // Remember which queue article is currently open in the form.
   let selectedArticleId = null;
+  let savedImageUrl = ""; // Remember which image address is actually saved on the server.
+  let imagePreviewTimer; // Wait briefly before loading an address that the editor is typing.
 
   // Show short feedback without inserting user content as HTML.
   function showMessage(message, isError = false) {
     elements.message.textContent = message;
     elements.message.classList.toggle("is-error", isError);
     elements.message.classList.toggle("is-success", !isError && Boolean(message));
+  }
+
+  function updateImagePreview() { // Show the working image without saving or publishing anything.
+    clearTimeout(imagePreviewTimer); // Cancel an older typing delay when the selection changes.
+    const address = elements.imageUrl.value.trim(); // Read the current image address without surrounding spaces.
+    elements.imagePreview.replaceChildren(); // Remove the previous image so it cannot be mistaken for the new one.
+    elements.imagePreview.hidden = true; // Keep an empty or invalid image frame out of the layout.
+    elements.imageStatus.classList.toggle("error-text", false); // Clear any earlier image warning.
+
+    if (!address) { // Handle a draft with no image or a cleared address.
+      elements.imageStatus.textContent = selectedArticleId ? "לא הוגדרה תמונה לכתבה הזאת." : "בחרו כתבה כדי לראות את התמונה שלה."; // Explain why there is no preview.
+      return; // Avoid sending an empty image request.
+    }
+
+    let imageUrl; // Hold the checked address before asking the browser to load it.
+    try { // Reject malformed addresses and non-web protocols.
+      imageUrl = new URL(address, window.location.origin); // Support both web links and local paths such as /uploads/photo.jpg.
+      if (!["http:", "https:"].includes(imageUrl.protocol)) throw new Error("Unsupported image address"); // Never load file, data, or script addresses here.
+    } catch (error) { // Explain addresses that cannot be used as web images.
+      elements.imageStatus.textContent = "כתובת התמונה אינה תקינה. השתמשו בקישור HTTP/HTTPS או בנתיב תמונה מהאתר."; // Give the editor a useful correction.
+      elements.imageStatus.classList.toggle("error-text", true); // Highlight the invalid-address message.
+      return; // Stop before creating an image for an invalid address.
+    }
+
+    const image = document.createElement("img"); // Use a new image element for each preview request.
+    image.alt = "תצוגה מקדימה של תמונת הכתבה הנבדקת"; // Describe the image for screen-reader users.
+    image.referrerPolicy = "no-referrer"; // Do not send the private editor page address to external image hosts.
+    image.hidden = true; // Hide the image until it has loaded successfully.
+    image.addEventListener("load", () => { // Reveal the image when the browser finishes loading it.
+      if (elements.imagePreview.firstElementChild !== image) return; // Ignore an image from a previous article or address.
+      image.hidden = false; // Show the complete image inside the preview frame.
+      elements.imageStatus.textContent = "התמונה נטענה לתצוגה מקדימה."; // Confirm that the image is available for inspection.
+    });
+    image.addEventListener("error", () => { // Handle a broken link or a failed network request.
+      if (elements.imagePreview.firstElementChild !== image) return; // Do not let an old error overwrite the current preview.
+      image.hidden = true; // Hide the broken-image icon.
+      elements.imagePreview.hidden = true; // Remove the empty frame after loading fails.
+      elements.imageStatus.textContent = "לא ניתן לטעון את התמונה. בדקו את הכתובת או את החיבור לרשת."; // Explain the failure without changing the saved article.
+      elements.imageStatus.classList.toggle("error-text", true); // Highlight the image warning.
+    });
+    elements.imageStatus.textContent = "טוען תצוגה מקדימה של התמונה..."; // Show feedback while the image is being downloaded.
+    elements.imagePreview.hidden = false; // Reserve a stable frame while loading.
+    elements.imagePreview.append(image); // Attach the image before loading so callbacks can check the current selection.
+    image.src = imageUrl.href; // Ask the browser to load the checked image address.
   }
 
   // Read JSON and turn non-success responses into normal JavaScript errors.
@@ -211,6 +259,8 @@
     elements.content.value = working.content || "";
     elements.category.value = working.category || "";
     elements.imageUrl.value = working.imageUrl || "";
+    savedImageUrl = elements.imageUrl.value.trim(); // Keep the server's image address for the approval check.
+    updateImagePreview(); // Show the working image, not the older public image.
     elements.requestNote.value = article.editorNote || "";
     // Update inputs, buttons, and version cards for the new workflow state.
     setEditorMode(status);
@@ -296,6 +346,10 @@
 
   // Publish the working version only after the editor explicitly approves it.
   async function publishArticle() {
+    if (selectedArticleId && elements.imageUrl.value.trim() !== savedImageUrl) { // Do not approve an older image while previewing an unsaved change.
+      showMessage("יש לשמור את כתובת התמונה באמצעות ״שמירת עריכה״ לפני אישור ופרסום.", true); // Explain the required save step.
+      return; // Leave the saved article and public version unchanged.
+    }
     // Ask for confirmation because publishing changes public content.
     if (!selectedArticleId || !window.confirm("לאשר ולפרסם את הגרסה הזאת?")) {
       return;
@@ -355,6 +409,8 @@
       // Reset the local selection after the server confirms deletion.
       selectedArticleId = null;
       elements.form.reset();
+      savedImageUrl = ""; // Clear the saved image address after deleting the selected article.
+      updateImagePreview(); // Remove the deleted article's image and any pending preview timer.
       elements.selectedTitle.textContent = "בחרו כתבה";
       elements.selectedStatus.textContent = "אין בחירה";
       setEditorMode("");
@@ -377,6 +433,11 @@
   elements.statusFilter.addEventListener("change", loadArticles);
   // Save edited fields when the editor submits the article form.
   elements.form.addEventListener("submit", saveArticle);
+  elements.imageUrl.addEventListener("input", () => { // Update the preview when the editor types or pastes a new address.
+    clearTimeout(imagePreviewTimer); // Replace the delay after each new character.
+    imagePreviewTimer = setTimeout(updateImagePreview, 350); // Wait until typing pauses to avoid loading every partial address.
+  });
+  elements.imageUrl.addEventListener("change", updateImagePreview); // Refresh immediately when the editor leaves the address field.
   // Connect the workflow buttons to their matching actions.
   elements.publish.addEventListener("click", publishArticle);
   elements.requestChanges.addEventListener("click", sendBackForChanges);
