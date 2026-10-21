@@ -58,7 +58,7 @@
           <input id="reporter-image-file" type="file" accept="image/jpeg,image/png,image/webp,image/gif"> <%# Open the system picker limited to supported image formats. %>
         </label>
         <p class="form-note" id="reporter-image-status">ניתן להעלות JPG, PNG, WebP או GIF עד 5MB. הכתובת תתמלא אוטומטית.</p> <%# Explain the accepted formats and what happens after upload. %>
-        <img class="reporter-image-preview" id="reporter-image-preview" src="<%= article.workingVersion.imageUrl %>" alt="תצוגה מקדימה של תמונת הכתבה" <%= article.workingVersion.imageUrl ? "" : "hidden" %>> <%# Show the current or newly uploaded image. %>
+        <img class="reporter-image-preview" id="reporter-image-preview" <% if (article.workingVersion.imageUrl) { %>src="<%= article.workingVersion.imageUrl %>"<% } %> alt="תצוגה מקדימה של תמונת הכתבה" <%= article.workingVersion.imageUrl ? "" : "hidden" %>> <%# Load an image only after the reporter chooses one; hide an empty preview. %>
       </div>
 
       <label> <%# Label the full article body. %>

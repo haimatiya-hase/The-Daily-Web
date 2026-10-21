@@ -25,6 +25,7 @@
   let activeSort = "publishedAt"; // Start with newest articles first.
   let loadedArticleCount = 0; // Count cards shown by the current query.
   let feedRequestVersion = 0; // Identify and ignore stale AJAX responses.
+  let feedRequestController = null; // Let a new filter cancel an older feed request.
   let searchTimer; // Store the short search delay timer.
 
   function readDeviceCookie() { // Read the anonymous key that the server uses when it records article views.
@@ -102,6 +103,14 @@
     return card; // Return the complete safe DOM card.
   }
 
+  // Replace results without making the page shorter than the current screen position.
+  function replaceFeedContent(...children) { // Swap a complete result page in one DOM update.
+    const feedTop = feed.getBoundingClientRect().top; // Read the feed's position inside the current screen.
+    const visibleHeight = Math.max(0, window.innerHeight - feedTop); // Keep enough space below the current scroll position, even for no results.
+    feed.style.minHeight = `${Math.ceil(visibleHeight)}px`; // Prevent the browser from jumping up when the result list becomes short.
+    feed.replaceChildren(...children); // Replace the old content only after the new content is ready.
+  }
+
   // Replace the feed with a friendly empty or error message.
   function showFeedMessage(title, message) { // Replace cards with one friendly feed state.
     if (!feed) return; // Stop when this page does not contain the feed.
@@ -112,7 +121,7 @@
     const text = document.createElement("p"); // Create the explanatory message.
     text.textContent = message; // Insert the safe state details.
     state.append(heading, text); // Combine the heading and message.
-    feed.replaceChildren(state); // Replace old cards with the new state.
+    replaceFeedContent(state); // Show the message while keeping the current screen position.
   }
 
   // Update the small heading badge with the number of cards currently shown.
@@ -137,6 +146,8 @@
 
     const requestVersion = ++feedRequestVersion; // Give this request a number used to ignore stale responses.
     const requestedCursor = nextCursor; // Preserve the exact page cursor for retries and response handling.
+    const controller = new AbortController(); // Create a cancel signal for this feed request.
+    feedRequestController = controller; // Let the next filter change cancel this request.
     isFeedLoading = true; // Block another request until this one finishes.
     feed.setAttribute("aria-busy", "true"); // Tell assistive technology that the feed is updating.
     if (retryButton) retryButton.disabled = true; // Prevent repeated retry clicks during loading.
@@ -154,7 +165,7 @@
       const headers = { Accept: "application/json" }; // Ask the API for its JSON response.
       const clientKey = getClientKey(); // Read the current shared key before every request so restored pages stay synchronized.
       if (clientKey) headers["X-Client-Key"] = clientKey; // Send the anonymous browser key when storage is available.
-      const response = await fetch(`/api/articles?${parameters}`, { headers }); // Request one feed page through AJAX.
+      const response = await fetch(`/api/articles?${parameters}`, { headers, signal: controller.signal }); // Request one feed page and allow newer filters to cancel it.
       if (!response.ok) throw new Error("Feed request failed"); // Move failed HTTP responses into the normal recovery path.
       const data = await response.json(); // Parse the successful API response.
       const articles = Array.isArray(data.articles) ? data.articles : []; // Use an empty list when the response shape is unexpected.
@@ -167,15 +178,20 @@
         const title = hasActiveFilter ? "לא נמצאו כתבות מתאימות" : "עדיין אין כתבות שפורסמו"; // Choose a clear empty-state title.
         const message = hasActiveFilter ? "אפשר לשנות את החיפוש או את הסינון." : "כתבות שאושרו יופיעו כאן ברגע שיפורסמו."; // Explain how the visitor can continue.
         showFeedMessage(title, message); // Replace the feed with the selected empty state.
+        loadedArticleCount = 0; // Clear the count only when an empty result is confirmed.
         hasMoreArticles = false; // Stop infinite scroll for this empty query.
         updateFeedCount("אין תוצאות"); // Update the status badge.
         return; // Stop before adding cards or a cursor.
       }
 
-      // Remove a first-page error message before a successful retry adds cards.
-      if (!requestedCursor) feed.replaceChildren(); // Clear an older first page before showing the new query.
-      feed.append(...articles.map(createArticleCard)); // Build and append every approved article card.
-      loadedArticleCount += articles.length; // Increase the visible card count.
+      const cards = articles.map(createArticleCard); // Prepare all new cards before changing the visible feed.
+      if (!requestedCursor) { // Replace the first page after a search or filter change.
+        replaceFeedContent(...cards); // Swap all cards at once and keep enough screen space.
+        loadedArticleCount = articles.length; // Count only cards from the new query.
+      } else { // Keep earlier pages when infinite scroll loads more results.
+        feed.append(...cards); // Add the next page below the existing cards.
+        loadedArticleCount += articles.length; // Include the new cards in the visible count.
+      }
       updateFeedCount(); // Show the updated count in the heading.
       nextCursor = data.pagination?.nextCursor || null; // Store the cursor for the next page.
       hasMoreArticles = data.pagination?.hasMore === true && Boolean(nextCursor); // Continue only when the API supplies a real cursor.
@@ -185,7 +201,10 @@
       }
     } catch (error) { // Recover from network, HTTP, and JSON failures.
       if (requestVersion !== feedRequestVersion) return; // Ignore an obsolete request failure.
-      if (!requestedCursor) { // Replace the feed only when its first page failed.
+      if (!requestedCursor && feed.querySelector(".article-card")) { // Keep readable results when a filter update fails.
+        updateFeedCount("העדכון נכשל — מוצגות התוצאות הקודמות"); // Explain why the old cards are still visible.
+        showFeedRetry("לא הצלחנו לעדכן את הסינון. התוצאות הקודמות נשארו מוצגות."); // Offer a retry for the new filters.
+      } else if (!requestedCursor) { // Show an error card only when no earlier articles are available.
         showFeedMessage("לא הצלחנו לטעון את הכתבות", "אפשר לנסות שוב בעוד רגע."); // Show a friendly first-page error.
         updateFeedCount("הטעינה נכשלה"); // Mark the visible feed status as failed.
         showFeedRetry("לא הצלחנו לטעון את הפיד."); // Offer a first-page retry.
@@ -196,6 +215,7 @@
     } finally { // Restore the interface after either success or failure.
       if (requestVersion === feedRequestVersion) { // Change state only when this is still the newest request.
         isFeedLoading = false; // Allow a later page or retry request.
+        feedRequestController = null; // Clear the controller after the current request finishes.
         feed.setAttribute("aria-busy", "false"); // Announce that the current update finished.
         if (retryButton) retryButton.disabled = false; // Make the recovery action available again.
         if (loadingIndicator.textContent === "טוען כתבות...") loadingIndicator.hidden = true; // Hide normal loading feedback.
@@ -203,19 +223,18 @@
     }
   }
 
-  // Clear old cards and restart pagination for the selected feed controls.
+  // Keep the current cards visible while new filter results are loading.
   function resetFeed() { // Start a fresh query after any control change.
     if (!feed) return; // Stop when this page has no public feed.
     feedRequestVersion += 1; // Make older in-flight responses obsolete.
+    feedRequestController?.abort(); // Stop waiting for results from the previous filter choice.
     isFeedLoading = false; // Allow the replacement request to begin immediately.
     activeSearch = searchInput?.value.trim() || ""; // Read and trim the current search text.
     activeCategory = categorySelect?.value || ""; // Read the current category.
     activeViewStatus = viewStatusSelect?.value || ""; // Read the current viewed-state.
     activeSort = sortSelect?.value || "publishedAt"; // Read the sort mode with a safe default.
-    loadedArticleCount = 0; // Reset the visible article counter.
     nextCursor = null; // Return pagination to the first page.
     hasMoreArticles = true; // Allow the new first page to load.
-    feed.replaceChildren(); // Remove cards from the previous query.
     feed.setAttribute("aria-busy", "true"); // Announce that replacement results are loading.
     updateFeedCount("טוען כתבות..."); // Show loading in the heading badge.
     hideFeedRetry(); // Remove an old recovery message.
@@ -316,7 +335,7 @@
     filters?.reset(); // Reset form controls to their HTML defaults.
     clearTimeout(searchTimer); // Cancel a delayed search request.
     resetFeed(); // Load the default first page again.
-    searchInput?.focus(); // Return keyboard focus to search.
+    searchInput?.focus({ preventScroll: true }); // Focus search without moving the visitor's screen.
   });
 
   // Retry the same first page or cursor after a temporary request failure.

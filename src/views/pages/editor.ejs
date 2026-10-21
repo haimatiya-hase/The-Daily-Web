@@ -72,9 +72,15 @@
             </label>
             <label> <%# Label the image URL input. %>
               כתובת תמונה
-              <input id="editor-image-url" name="imageUrl" type="text" maxlength="1000" placeholder="https://... או /uploads/...">
+              <input id="editor-image-url" name="imageUrl" type="text" dir="ltr" maxlength="1000" aria-describedby="editor-image-status editor-image-help" placeholder="https://... או /uploads/..."> <%# Keep image addresses readable and connect them to preview feedback. %>
             </label>
           </div>
+          <section class="editor-image-section" aria-label="תצוגה מקדימה של תמונת הכתבה"> <%# Let the editor inspect the image before approving the article. %>
+            <strong>תצוגה מקדימה של התמונה</strong> <%# Explain what the image below represents. %>
+            <div class="editor-image-preview" id="editor-image-preview" hidden></div> <%# Insert an image only when the selected article has an address. %>
+            <p class="form-note" id="editor-image-status" role="status" aria-live="polite">בחרו כתבה כדי לראות את התמונה שלה.</p> <%# Announce loading, missing images, and image errors. %>
+            <p class="form-note" id="editor-image-help">התצוגה מציגה את התמונה של הגרסה הנבדקת. לאחר שינוי הכתובת יש ללחוץ על ״שמירת עריכה״ לפני האישור.</p> <%# Keep previewing separate from saving and publishing. %>
+          </section>
           <label> <%# Label the note used when returning an article for changes. %>
             הערת עורך להחזרה לתיקונים
             <textarea id="editor-request-note" name="note" maxlength="2000" rows="3" placeholder="כתבו מה הכתב צריך לתקן..."></textarea>

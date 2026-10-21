@@ -38,7 +38,7 @@ chore: add demo seed script
 
 ```bash
 git switch main
-git pull origin main
+git pull --ff-only origin main
 git switch -c feature/<member>-<scope>
 # עבודה ובדיקות
 git add .

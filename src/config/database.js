@@ -8,10 +8,10 @@ let databaseState = "not-configured";
 
 // Open the MongoDB connection when a URI exists.
 async function connectDatabase() {
-  // Allow the UI shell to run before local MongoDB setup is complete.
+  // Keep health checks available even when the database is not configured.
   if (!config.mongoUri) {
     databaseState = "not-configured";
-    logger.warn("MONGODB_URI is not configured; running in UI-only scaffold mode");
+    logger.warn("MONGODB_URI is not configured; database-backed features are unavailable");
     return false;
   }
 

@@ -1,5 +1,7 @@
 const test = require("node:test"); // Load Node's small built-in test runner.
 const assert = require("node:assert/strict"); // Load strict assertions for clear failures.
+const path = require("node:path"); // Locate the real reporter template.
+const ejs = require("ejs"); // Render the template without starting a server or changing data.
 const Article = require("../src/models/article.model"); // Load the shared model so database calls can be replaced during controller tests.
 const { buildWorkingVersion, canReporterEdit, createReporterArticle, saveReporterArticle, submitReporterArticle, validateSubmission } = require("../src/controllers/reporter.controller"); // Load the reporter actions and business rules being tested.
 
@@ -26,6 +28,23 @@ function createArticleDocument(overrides = {}) { // Build a simple article that 
   };
   return Object.assign(values, overrides); // Apply the values needed by one focused test.
 }
+
+test("reporter preview loads only a chosen image", async () => { // Check both the empty draft and an article with a real image.
+  const template = path.join(__dirname, "../src/views/pages/reporter-edit.ejs"); // Use the actual page and its includes.
+  const article = { ...createArticleDocument(), id: "507f1f77bcf86cd799439011", canEdit: true, statusLabel: "Draft", hasPublishedVersion: false }; // Prepare only display data.
+  const locals = { appName: "The Daily Web", pageTitle: "Reporter", activePage: "reporter", currentUser: null, article }; // Provide the shared page values.
+  article.workingVersion.imageUrl = ""; // Represent a new draft before an image is selected.
+  const emptyHtml = await ejs.renderFile(template, locals); // Render without database or HTTP requests.
+  const emptyPreview = emptyHtml.match(/<img[^>]*id="reporter-image-preview"[^>]*>/)?.[0]; // Find the preview tag only.
+  assert.ok(emptyPreview); // Keep the upload preview available in the form.
+  assert.doesNotMatch(emptyPreview, /\ssrc=/); // Do not request the current page as an empty image.
+  assert.match(emptyPreview, /\bhidden\b/); // Hide the preview until an image is selected.
+  article.workingVersion.imageUrl = "/uploads/chosen-image.png"; // Represent a chosen image without creating a file.
+  const chosenHtml = await ejs.renderFile(template, locals); // Render the same page with an image address.
+  const chosenPreview = chosenHtml.match(/<img[^>]*id="reporter-image-preview"[^>]*>/)?.[0]; // Find the updated preview tag.
+  assert.match(chosenPreview, /src="\/uploads\/chosen-image\.png"/); // Show the reporter's selected image.
+  assert.doesNotMatch(chosenPreview, /\bhidden\b/); // Keep a selected image visible.
+});
 
 test("reporter can edit only allowed workflow states", () => { // Verify the reporter status permissions.
   assert.equal(canReporterEdit("draft"), true); // Allow editing a new draft.
@@ -88,6 +107,7 @@ test("create action always assigns the logged-in reporter as owner", async (cont
   assert.equal(forwardedError, null); // Confirm that no error reached middleware.
   assert.equal(insertedValues.author, "reporter-123"); // Confirm that ownership came from the session user.
   assert.equal(insertedValues.status, "draft"); // Confirm that every new article starts as a draft.
+  assert.equal(insertedValues.workingVersion.imageUrl, ""); // Require a real image instead of inserting an old placeholder.
   assert.equal(res.statusCode, 201); // Confirm the REST create status.
   assert.match(res.body.editUrl, /^\/reporter\/articles\//); // Confirm that the browser receives the editor link.
 });

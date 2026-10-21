@@ -357,7 +357,7 @@ h2, h3 { line-height: 1.15; }
 .section-heading h2 { margin: 5px 0 0; color: var(--ink); font-size: 30px; letter-spacing: -0.05em; }
 
 /* Use a soft pill for statuses and counters. */
-.status-pill, .weather-placeholder {
+.status-pill {
   display: inline-flex;
   align-items: center;
   gap: 7px;
@@ -447,15 +447,6 @@ input:disabled, select:disabled, textarea:disabled { cursor: not-allowed; opacit
 /* Keep the feed empty state intentional instead of looking unfinished. */
 .empty-state { padding: 46px 28px; text-align: center; }
 
-/* Draw three glowing circles as a simple feed loading mark. */
-.empty-visual { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 0 auto 24px; }
-
-/* Style each feed signal dot. */
-.empty-visual span { display: block; width: 11px; height: 11px; border: 1px solid var(--accent); border-radius: 50%; background: rgba(96, 245, 210, 0.18); box-shadow: 0 0 16px rgba(96, 245, 210, 0.3); }
-
-/* Offset the center dot for a small motion-like rhythm. */
-.empty-visual span:nth-child(2) { transform: translateY(-9px); }
-
 /* Keep empty state headings close to their description. */
 .empty-state h3, .empty-state h2 { margin: 10px 0; color: var(--ink); }
 
@@ -463,7 +454,16 @@ input:disabled, select:disabled, textarea:disabled { cursor: not-allowed; opacit
 .empty-state p { max-width: 540px; margin: 0 auto; color: var(--muted); }
 
 /* Stack public article cards with a clear reading rhythm. */
-.feed { display: grid; gap: 18px; }
+.feed {
+  display: grid; /* Stack cards in one column. */
+  align-content: start; /* Keep short results at the top of the reserved space. */
+  gap: 18px; /* Leave a clear gap between stories. */
+  overflow-anchor: none; /* Do not use changing cards as browser scroll anchors. */
+  transition: opacity 160ms ease; /* Fade loading feedback gently. */
+}
+
+/* Keep old cards visible and gently dim them while a new result page loads. */
+.feed[aria-busy="true"] { opacity: 0.65; }
 
 /* Present each public story as an image beside its approved text. */
 .article-card { display: grid; grid-template-columns: minmax(180px, 0.7fr) minmax(0, 1.3fr); overflow: hidden; border: 1px solid var(--line); border-radius: 18px; background: var(--card); box-shadow: var(--shadow); }
@@ -792,6 +792,26 @@ code { padding: 3px 7px; border-radius: 6px; color: var(--accent); background: r
 
 /* Share editor category and image fields. */
 .editor-fields-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+/* Keep the editor's image and its feedback together before the approval controls. */
+.editor-image-section { display: grid; gap: 10px; min-width: 0; }
+
+/* Reserve a responsive frame so loading an image does not stretch the editor form. */
+.editor-image-preview {
+  width: 100%; /* Fit the available form width, including on small screens. */
+  aspect-ratio: 16 / 9; /* Keep the frame stable while an image loads. */
+  max-height: 360px; /* Leave the approval controls within a comfortable distance. */
+  overflow: hidden; /* Keep large images inside the rounded frame. */
+  border: 1px solid var(--line); /* Match the editor's existing borders. */
+  border-radius: 14px; /* Match the surrounding form cards. */
+  background: var(--paper-soft); /* Provide a quiet background around the complete image. */
+}
+
+/* Show the whole image so the editor can inspect it without cropping. */
+.editor-image-preview img { display: block; width: 100%; height: 100%; object-fit: contain; }
+
+/* Keep loading, missing, or broken images hidden even with the image display rule. */
+.editor-image-preview[hidden], .editor-image-preview img[hidden] { display: none; }
 
 /* Let editor actions wrap on smaller screens. */
 .editor-actions { display: flex; flex-wrap: wrap; gap: 10px; padding-top: 6px; }

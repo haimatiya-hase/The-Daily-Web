@@ -34,6 +34,8 @@ JavaScript with AJAX. No frontend framework is required.
 
 > **Current checkpoint:** all core areas are implemented, including the public
 > article page, guest comments, view statistics, and the Impact Analytics graph.
+> This is not a full submission sign-off: User CRUD and weather refresh on an
+> open tab still need work. See the [current requirements audit](docs/requirements-traceability.md).
 
 ## Editorial workflow
 
@@ -130,7 +132,7 @@ an updated article is being reviewed.
   keeps working with a typed address as well.
 - Server-rendered article page: the full approved content is in the initial HTML.
 - Guest comments are added through AJAX and appear immediately without a reload.
-- The server blocks a fourth comment within one minute from the same device (429)
+- The server blocks a fourth comment within one minute from the same browser key (429)
   and logs the blocked attempt as an operational event.
 - Long threads load twenty comments at a time with cursor pagination and a
   load-more button; the first page and the real total are already in the HTML.
@@ -139,19 +141,19 @@ an updated article is being reviewed.
   soft deletion, and restore. Every action records the acting editor.
 - Every article visit is counted on the server while the page renders, so it is
   recorded even without browser JavaScript; crawlers are filtered by user agent.
-  The device is identified by a first-party cookie that the page syncs into
+  The browser is identified by a first-party cookie that the page syncs into
   localStorage, so the feed's viewed/unviewed filter keeps matching.
 - Views are stored three ways, each optimized for one question: a raw
   `ViewEvent` per visit (device-level questions, expires after 180 days), an
-  hourly `ViewStat` bucket per article updated with one atomic `$inc` (charts
-  read a handful of documents no matter the traffic), and `viewCount` on the
-  article (popularity sort). One visit costs three O(1) writes.
+  hourly `ViewStat` bucket per article updated with an atomic `$inc` (charts
+  read buckets instead of individual visits), and `viewCount` on the article
+  (popularity sort). One visit performs three separate writes, not one transaction.
 - Editors manage the statistics model on `/editor/views`: list and search
   published articles with total / 24h / 7d views, see the per-version
   breakdown, rebuild the buckets and counter from the raw events (Update), or
   reset an article's view data (Delete).
-- Impact Analytics (Chart.js, served locally from `node_modules` so it works
-  offline): views over a real time axis with hourly detail for 24h / 7d and daily
+- Impact Analytics (Chart.js served locally from `node_modules`, without a CDN
+  request for the chart library): views over a time axis with hourly detail for 24h / 7d and daily
   detail for 30d / all, gaps filled with zeros, a dashed labeled marker at every
   point an editor approved and published a version, and a table that states the
   views in the 24 hours before and after each update with the percentage change.
@@ -176,9 +178,10 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
-MongoDB is required for the database-backed features. If `MONGODB_URI` is
-missing, the server can still render the UI scaffold, but login, sessions,
-articles, and the seed script cannot work correctly.
+Copy `.env.example` only on first setup; do not overwrite an existing `.env`.
+MongoDB is required for database-backed features. Without `MONGODB_URI`, the
+HTTP service can answer health checks, but login, sessions, articles, and the
+seed script cannot work normally.
 
 ## Environment variables
 
@@ -213,14 +216,17 @@ The seed creates or updates:
 - 500 marked demo articles in all workflow states;
 - published and working versions for update scenarios, including articles with
   two approved updates so the graph shows several publication markers;
-- close to 400 demo comments spread over two weeks, including long threads for
+- demo comments spread over two weeks, including long threads for
   pagination and hidden comments for the moderation screen;
 - 30 days of view events with hourly spread for every published article, dense
   on the first twelve, with hourly buckets built by the rebuild action.
 
-The seeded stories use category-specific public photos and realistic newsroom
-display names, so the public feed looks closer to a real news product during
-the demo.
+The fictional stories use category-specific public photos and the team's real
+display names. New reporter drafts have no default image: choose or upload one.
+
+**Seed reset warning:** rerunning seed replaces marked demo content and its
+comments/views, including manual activity on those demo articles. It is not
+needed to start the server. Back up data you want to keep before reseeding.
 
 Team usernames:
 
@@ -250,6 +256,9 @@ Health check:
 ```text
 GET http://localhost:3000/api/health
 ```
+
+The health endpoint returns the HTTP service and database connection status
+without exposing credentials. Check `database`, not only `ok`.
 
 Image upload (reporters and editors, raw image body, no external library):
 
@@ -283,9 +292,6 @@ DELETE /api/comments/:commentId                    editor, hide (soft delete)
 POST   /api/comments/:commentId/restore            editor, make visible again
 ```
 
-The endpoint returns the server status and the database connection status
-without exposing credentials.
-
 ## Project structure
 
 ```text
@@ -302,28 +308,30 @@ src/
 └── views/                    Server-rendered EJS pages and partials
 public/
 ├── css/                      Responsive newsroom design
-└── js/                       Vanilla JavaScript and AJAX behavior
+├── js/                       Vanilla JavaScript and AJAX behavior
+└── uploads/                  Uploaded image files (keep this folder)
 scripts/                      Seed and syntax-check utilities
-test/                         Automated unit and workflow tests
-docs/                         Requirements, walkthroughs, and team process
+test/                         All automated tests, including reporter tests
+docs/                         Current guides and original source documents
 ```
 
 ## Team ownership
 
 Each student owns one product area from interface to database and tests.
 
-| Team member | End-to-end responsibility | Main branch |
-| --- | --- | --- |
-| Liri | Login/Auth, Users, Security, Weather | `feature/liri-login-auth-users-weather` |
-| Bremer | Home Feed, Search, Filter, Sort | `feature/bremer-home-feed` |
-| Dor | Reporter Area | `feature/dor-reporter` |
-| Haim | Editor Area and content management | `feature/haim-editor-area` |
-| Itay | Article, Comments, Views, Analytics | `feat/implement-article`, `feat/implement-comments`, `feat/implement-views`, `feat/implement-analytics`, `fix/article-image-upload` |
+| Team member | End-to-end responsibility |
+| --- | --- |
+| Liri | Login/Auth, Users, Security, Weather |
+| Bremer | Home Feed, Search, Filter, Sort |
+| Dor | Reporter Area |
+| Haim | Editor Area and content management |
+| Itay | Article, Comments, Views, Analytics, image upload |
 
 ## Git workflow
 
-We protect `main`. Every feature is developed on a separate branch and enters
-`main` through a Pull Request.
+Our team workflow keeps `main` stable: develop on separate branches and review
+Pull Requests before merging. This convention does not itself enforce GitHub
+branch-protection settings.
 
 ```bash
 git switch main
@@ -341,15 +349,12 @@ tests that were run, and a screenshot when the change affects the UI.
 
 ## Documentation
 
-- [Requirements traceability](docs/requirements-traceability.md)
+- [Start here: documentation index](docs/README.md)
+- [Current application walkthrough](docs/application-walkthrough.md)
+- [Requirements traceability and open gaps](docs/requirements-traceability.md)
 - [MongoDB setup](docs/mongodb-setup.md)
 - [Branching strategy](docs/branching-strategy.md)
 - [Team division](docs/team-division.md)
-- [Editor area walkthrough](docs/editor-area-walkthrough.md)
-- [Authentication and weather walkthrough](docs/liri-auth-weather-walkthrough.md)
-- [Home feed walkthrough](docs/home-feed-walkthrough.md)
-- [Article, comments, views, and analytics walkthrough](docs/itay-article-comments-views-analytics-walkthrough.md)
-- [Code walkthrough](docs/code-walkthrough.md)
 - [Original project requirements](docs/project-requirements.pdf)
 - [Updated project division](docs/project-division-updated.docx)
 
