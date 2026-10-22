@@ -184,16 +184,16 @@
 
     const actions = document.createElement("div");
     actions.className = "moderation-actions";
-    const editButton = createButton("עריכה", "button-secondary moderation-edit", () => startEditing(card, comment.id));
-    const toggleButton = createButton("", "button-danger moderation-toggle", () => toggleVisibility(card, comment.id));
+    const editButton = createButton("עריכה", "button-secondary moderation-edit", () => startEditing(card, comment.id)); // Open the text editor for this comment when its edit button is clicked.
+    const toggleButton = createButton("", "button-danger moderation-toggle", () => toggleVisibility(card, comment.id)); // Hide or restore this specific comment when the toggle button is clicked.
     actions.append(editButton, toggleButton);
 
     const editActions = document.createElement("div");
     editActions.className = "moderation-actions moderation-edit-actions";
     editActions.hidden = true;
     editActions.append(
-      createButton("שמירה", "button-primary moderation-save", () => {}),
-      createButton("ביטול", "button-secondary moderation-cancel", () => {})
+      createButton("שמירה", "button-primary moderation-save", () => {}), // Use an empty handler until startEditing assigns this comment's save action.
+      createButton("ביטול", "button-secondary moderation-cancel", () => {}) // Use an empty handler until startEditing assigns this comment's cancel action.
     );
 
     card.append(header, articleLink, body, editor, actions, editActions);
@@ -256,7 +256,7 @@
   // Search while typing with a short delay so the server is not called on every key.
   elements.search.addEventListener("input", () => {
     clearTimeout(searchTimer);
-    searchTimer = setTimeout(() => loadQueue(), 300);
+    searchTimer = setTimeout(() => loadQueue(), 300); // Reload the queue after typing pauses for 300 milliseconds.
   });
   // Reload immediately when the visibility filter changes.
   elements.status.addEventListener("change", () => loadQueue());

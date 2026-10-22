@@ -85,7 +85,7 @@
     button.type = "button";
     button.className = "row-select";
     button.textContent = item.title;
-    button.addEventListener("click", () => selectArticle(item.id));
+    button.addEventListener("click", () => selectArticle(item.id)); // Load the statistics for the article represented by this row.
     titleCell.append(button);
     row.append(titleCell);
 
@@ -149,7 +149,7 @@
 
     // Draw the per-version breakdown.
     elements.versions.replaceChildren();
-    const versionTotal = summary.byVersion.reduce((sum, entry) => sum + entry.views, 0);
+    const versionTotal = summary.byVersion.reduce((sum, entry) => sum + entry.views, 0); // Add all version counts to calculate each version's share of the total.
     if (summary.byVersion.length === 0) {
       const row = document.createElement("tr");
       addCell(row, "אין צפיות שנרשמו לפי גרסה.", "form-note").colSpan = 3;

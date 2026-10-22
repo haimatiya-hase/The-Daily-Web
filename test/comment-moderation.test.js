@@ -106,7 +106,7 @@ test("hiding, editing, and restoring record the acting editor and reject missing
   let nextResult = createDocument(5, { article: { _id: "art1", workingVersion: { title: "טיוטה" } } }); // Return a populated comment by default.
   Comment.findOneAndUpdate = (filter, update, options) => { // Replace MongoDB with a recorder.
     calls.push({ filter, update, options });
-    return { populate() { return this; }, async lean() { return nextResult; } };
+    return { populate() { return this; }, async lean() { return nextResult; } }; // Keep population chainable and return the prepared test result without database access.
   };
 
   const hidden = await commentService.softDeleteComment("c5", "editor-1"); // Hide one comment.

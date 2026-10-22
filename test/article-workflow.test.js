@@ -110,8 +110,8 @@ test("editor cannot approve an article outside the review queue", () => {
 
   // Confirm that the service blocks approval in the wrong state.
   assert.throws(
-    () => approveArticle(article, "editor-id", testDate),
-    (error) => error.statusCode === 409
+    () => approveArticle(article, "editor-id", testDate), // Try approving an article in a state that is not ready for review.
+    (error) => error.statusCode === 409 // Confirm that the workflow rejects the action with a conflict error.
   );
 });
 
@@ -121,8 +121,8 @@ test("returning an article requires an editor note", () => {
 
   // Confirm that an empty note is rejected.
   assert.throws(
-    () => requestChanges(article, "editor-id", "", testDate),
-    (error) => error.statusCode === 400
+    () => requestChanges(article, "editor-id", "", testDate), // Try returning an article without the required editor note.
+    (error) => error.statusCode === 400 // Confirm that a missing note produces a validation error.
   );
   // Keep the article in review when the note is invalid.
   assert.equal(article.status, "pending_review");
@@ -146,7 +146,7 @@ test("returning an article stores the note and changes its status", () => {
 test("editor validation rejects missing required fields", () => {
   // Confirm that title, content, and category are required for editor updates.
   assert.throws(
-    () => validateEditorUpdate({ title: "", content: "Text", category: "News" }),
-    (error) => error.statusCode === 400 && error.message.includes("title is required")
+    () => validateEditorUpdate({ title: "", content: "Text", category: "News" }), // Run validation with missing required article fields.
+    (error) => error.statusCode === 400 && error.message.includes("title is required") // Confirm both the validation status and the missing-title message.
   );
 });

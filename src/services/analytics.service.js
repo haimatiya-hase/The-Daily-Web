@@ -48,7 +48,7 @@ const getArticleHourlyBuckets = async (articleId, { from, to } = {}) => {
     .sort({ bucketStart: 1 })
     .lean();
 
-  return buckets.map((bucket) => ({
+  return buckets.map((bucket) => ({ // Convert each database bucket into a plain time-and-count object.
     start: new Date(bucket.bucketStart),
     views: bucket.views,
     byVersion: bucket.byVersion || {}
@@ -57,8 +57,8 @@ const getArticleHourlyBuckets = async (articleId, { from, to } = {}) => {
 
 // Sum the views of the hourly buckets that start inside [from, to).
 const sumBucketsBetween = (buckets, from, to) => buckets
-  .filter((bucket) => bucket.start >= from && bucket.start < to)
-  .reduce((sum, bucket) => sum + bucket.views, 0);
+  .filter((bucket) => bucket.start >= from && bucket.start < to) // Keep buckets starting at or after from, but strictly before to.
+  .reduce((sum, bucket) => sum + bucket.views, 0); // Add the view counts of the remaining buckets, starting from zero.
 
 // Build a gap-free series between two moments at the requested resolution.
 const buildSeries = (buckets, from, to, resolution) => {
@@ -117,8 +117,8 @@ const getArticleAnalytics = async (articleId, { range, now = new Date() } = {}) 
   // Prefer the recorded history and fall back to the single known publication for older records.
   const publications = (article.publicationHistory?.length
     ? article.publicationHistory
-    : [article.publishedVersion].filter((version) => version?.publishedAt)
-  ).map((entry) => ({ versionNumber: Number(entry.versionNumber) || 1, publishedAt: new Date(entry.publishedAt) }));
+    : [article.publishedVersion].filter((version) => version?.publishedAt) // Keep the legacy public version only when it has a publication date.
+  ).map((entry) => ({ versionNumber: Number(entry.versionNumber) || 1, publishedAt: new Date(entry.publishedAt) })); // Normalize each history item to a version number and a Date.
 
   // Start the window at the range boundary, or for "all" at the earliest known activity but at least one week back.
   const earliest = [buckets[0]?.start, publications[0]?.publishedAt].filter(Boolean).sort((a, b) => a - b)[0] || now;
@@ -128,8 +128,8 @@ const getArticleAnalytics = async (articleId, { range, now = new Date() } = {}) 
   const to = now;
 
   const points = buildSeries(buckets, from, to, resolution);
-  const viewsInRange = points.reduce((sum, point) => sum + point.views, 0);
-  const peak = points.reduce((best, point) => (point.views > best.views ? point : best), { time: null, views: 0 });
+  const viewsInRange = points.reduce((sum, point) => sum + point.views, 0); // Add the displayed points to get the total for the selected time window.
+  const peak = points.reduce((best, point) => (point.views > best.views ? point : best), { time: null, views: 0 }); // Keep the point with the largest view count; ties keep the earlier point.
 
   return {
     article: {

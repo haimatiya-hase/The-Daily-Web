@@ -227,7 +227,7 @@ async function upsertDemoArticles(reporters, editor) {
     // Record every approval point so the Impact Analytics graph can mark it.
     const publicationHistory = hasPublishedVersion
       ? versionNumber > 1
-        ? publicationTimes.slice(0, versionNumber).map((time, position) => ({ versionNumber: position + 1, publishedAt: time, approvedBy: editor._id }))
+        ? publicationTimes.slice(0, versionNumber).map((time, position) => ({ versionNumber: position + 1, publishedAt: time, approvedBy: editor._id })) // Turn each sample publication time into a numbered history entry.
         : [{ versionNumber: 1, publishedAt, approvedBy: editor._id }]
       : [];
 
@@ -296,7 +296,7 @@ async function refreshDemoRelatedData(articles) {
     "מחכה להמשך הסיקור בשבוע הבא."
   ];
   const commentDocuments = [];
-  const publishedForComments = articles.filter((article) => article.status === "published");
+  const publishedForComments = articles.filter((article) => article.status === "published"); // Keep only published demo articles when preparing public comments.
 
   publishedForComments.forEach((article, articleIndex) => {
     // Give the first three articles long threads so the load-more button appears, and a short spread elsewhere.
@@ -405,7 +405,7 @@ async function seed() {
 
   // Create the four reporter accounts in parallel.
   const reporters = await Promise.all(
-    reporterAccounts.map(({ username, displayName }) => (
+    reporterAccounts.map(({ username, displayName }) => ( // Create or update each reporter account and collect the promises.
       getOrCreateUser(username, displayName, "reporter")
     ))
   );

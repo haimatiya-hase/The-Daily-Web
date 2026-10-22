@@ -61,8 +61,8 @@ test("the all-time range starts at the earliest activity and uses days", async (
   const originalFind = Article.findById; const originalStat = ViewStat.find; // Keep the real queries.
   context.after(() => { Article.findById = originalFind; ViewStat.find = originalStat; }); // Restore them.
   const now = new Date("2026-09-10T12:00:00.000Z");
-  Article.findById = () => createQuery({ _id: "64f000000000000000000001", viewCount: 3, publishedVersion: { title: "כותרת", versionNumber: 1, publishedAt: new Date("2026-09-05T09:00:00.000Z") }, publicationHistory: [] });
-  ViewStat.find = () => createQuery([{ bucketStart: new Date("2026-09-07T09:00:00.000Z"), views: 3 }]);
+  Article.findById = () => createQuery({ _id: "64f000000000000000000001", viewCount: 3, publishedVersion: { title: "כותרת", versionNumber: 1, publishedAt: new Date("2026-09-05T09:00:00.000Z") }, publicationHistory: [] }); // Return a published article with three views for the default-range test.
+  ViewStat.find = () => createQuery([{ bucketStart: new Date("2026-09-07T09:00:00.000Z"), views: 3 }]); // Return one hourly bucket with three views instead of reading MongoDB.
 
   const result = await analytics.getArticleAnalytics("64f000000000000000000001", { range: "all", now });
 
@@ -86,8 +86,8 @@ test("an article without views or history yields a single zero point and no mark
   const originalFind = Article.findById; const originalStat = ViewStat.find; // Keep the real queries.
   context.after(() => { Article.findById = originalFind; ViewStat.find = originalStat; }); // Restore them.
   const now = new Date("2026-09-10T12:30:00.000Z");
-  Article.findById = () => createQuery({ _id: "64f000000000000000000001", viewCount: 0, publishedVersion: { title: "ריקה", versionNumber: 1 }, publicationHistory: [] });
-  ViewStat.find = () => createQuery([]);
+  Article.findById = () => createQuery({ _id: "64f000000000000000000001", viewCount: 0, publishedVersion: { title: "ריקה", versionNumber: 1 }, publicationHistory: [] }); // Return an article with no recorded activity.
+  ViewStat.find = () => createQuery([]); // Return an empty list of hourly buckets.
 
   const result = await analytics.getArticleAnalytics("64f000000000000000000001", { range: "all", now });
 
@@ -103,7 +103,7 @@ test("the 24-hour range is hourly, and a marker on the window edge counts as in 
   const now = new Date("2026-09-10T12:00:00.000Z");
   const edge = new Date("2026-09-09T12:00:00.000Z"); // Exactly 24 hours ago.
   Article.findById = () => createQuery({ _id: "64f000000000000000000001", viewCount: 1, publishedVersion: { title: "קצה", versionNumber: 2 }, publicationHistory: [{ versionNumber: 1, publishedAt: new Date("2026-09-01T00:00:00.000Z") }, { versionNumber: 2, publishedAt: edge }] });
-  ViewStat.find = () => createQuery([{ bucketStart: new Date("2026-09-10T11:00:00.000Z"), views: 1 }]);
+  ViewStat.find = () => createQuery([{ bucketStart: new Date("2026-09-10T11:00:00.000Z"), views: 1 }]); // Return one view near the end of the requested 24-hour range.
 
   const result = await analytics.getArticleAnalytics("64f000000000000000000001", { range: "24h", now });
 
@@ -131,8 +131,8 @@ test("the all-time range keeps the earliest activity when it is older than one w
   const originalFind = Article.findById; const originalStat = ViewStat.find; // Keep the real queries.
   context.after(() => { Article.findById = originalFind; ViewStat.find = originalStat; }); // Restore them.
   const now = new Date("2026-09-10T12:00:00.000Z");
-  Article.findById = () => createQuery({ _id: "64f000000000000000000001", viewCount: 2, publishedVersion: { title: "ותיקה", versionNumber: 1 }, publicationHistory: [{ versionNumber: 1, publishedAt: new Date("2026-07-01T08:00:00.000Z") }] });
-  ViewStat.find = () => createQuery([{ bucketStart: new Date("2026-07-02T09:00:00.000Z"), views: 2 }]);
+  Article.findById = () => createQuery({ _id: "64f000000000000000000001", viewCount: 2, publishedVersion: { title: "ותיקה", versionNumber: 1 }, publicationHistory: [{ versionNumber: 1, publishedAt: new Date("2026-07-01T08:00:00.000Z") }] }); // Return an older article to test the all-time range.
+  ViewStat.find = () => createQuery([{ bucketStart: new Date("2026-07-02T09:00:00.000Z"), views: 2 }]); // Return its old activity so the range must extend beyond one week.
 
   const result = await analytics.getArticleAnalytics("64f000000000000000000001", { range: "all", now });
 

@@ -41,11 +41,11 @@ test("a file whose content does not match its declared type is rejected", async 
 
   await assert.rejects( // Send PNG bytes while claiming JPEG.
     () => saveImage({ buffer: png, declaredType: "image/jpeg", uploadDir }),
-    (error) => error.statusCode === 415
+    (error) => error.statusCode === 415 // Accept only the expected unsupported-image error.
   );
   await assert.rejects( // Send text while claiming PNG.
     () => saveImage({ buffer: Buffer.from("not an image at all"), declaredType: "image/png", uploadDir }),
-    (error) => error.statusCode === 415
+    (error) => error.statusCode === 415 // Check that invalid image content receives status 415.
   );
   assert.deepEqual(await fs.readdir(uploadDir), []); // Confirm nothing was written for rejected uploads.
 });
