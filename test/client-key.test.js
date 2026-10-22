@@ -11,7 +11,7 @@ test("cookies are read by name from the raw header", () => { // Verify the depen
 
 test("the device key prefers the header, then the cookie, then the address", () => { // Verify the identification order.
   const withHeader = { get: () => "header-key", headers: { cookie: `${DEVICE_COOKIE_NAME}=cookie-key` }, ip: "1.1.1.1" };
-  const withCookie = { get: () => "", headers: { cookie: `${DEVICE_COOKIE_NAME}=cookie-key` }, ip: "1.1.1.1" };
+  const withCookie = { get: () => "", headers: { cookie: `${DEVICE_COOKIE_NAME}=cookie-key` }, ip: "1.1.1.1" }; // Simulate a request with a device cookie but no client-key header.
   const withNothing = { get: () => "", headers: {}, ip: "1.1.1.1" };
   assert.equal(readClientKey(withHeader), "header-key"); // Confirm browser scripts win.
   assert.equal(readClientKey(withCookie), "cookie-key"); // Confirm the cookie is used for plain page loads.

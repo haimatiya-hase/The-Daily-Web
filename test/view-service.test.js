@@ -8,11 +8,11 @@ const viewService = require("../src/services/view.service"); // Load the statist
 
 // Build the small Mongoose query chain that the service uses for the list query.
 const createQuery = (documents, calls) => ({
-  select(value) { calls.select = value; return this; },
-  sort(value) { calls.sort = value; return this; },
-  skip(value) { calls.skip = value; return this; },
-  limit(value) { calls.limit = value; return this; },
-  async lean() { return documents; }
+  select(value) { calls.select = value; return this; }, // Record selected fields and keep the fake query chain working.
+  sort(value) { calls.sort = value; return this; }, // Record the requested order without querying a database.
+  skip(value) { calls.skip = value; return this; }, // Record the page offset and return the same fake query.
+  limit(value) { calls.limit = value; return this; }, // Record the result limit and return the same fake query.
+  async lean() { return documents; } // Return the test documents instead of reading MongoDB.
 });
 
 test("hours and days are derived from the view time", () => { // Verify the bucket keys.
@@ -35,7 +35,7 @@ test("recording a view writes the event, the hourly bucket, and the counter toge
   context.after(() => { ViewEvent.create = originalCreate; ViewStat.updateOne = originalStat; Article.updateOne = originalArticle; }); // Restore all three.
   const calls = {}; // Record every write.
   ViewEvent.create = async (doc) => { calls.event = doc; return doc; };
-  ViewStat.updateOne = async (filter, update, options) => { calls.bucket = { filter, update, options }; return {}; };
+  ViewStat.updateOne = async (filter, update, options) => { calls.bucket = { filter, update, options }; return {}; }; // Capture the hourly counter update without changing real data.
   Article.updateOne = async (filter, update) => { calls.counter = { filter, update }; return {}; };
   const viewedAt = new Date("2026-09-10T14:37:52.123Z"); // Use a fixed time so the bucket is predictable.
 
@@ -91,9 +91,9 @@ test("an unknown sort falls back to the total order", async (context) => { // Ve
   const originalFind = Article.find; const originalCount = Article.countDocuments; const originalAggregate = ViewStat.aggregate; // Keep the real methods.
   context.after(() => { Article.find = originalFind; Article.countDocuments = originalCount; ViewStat.aggregate = originalAggregate; }); // Restore them.
   const calls = {};
-  Article.find = () => createQuery([], calls);
-  Article.countDocuments = async () => 0;
-  ViewStat.aggregate = async () => [];
+  Article.find = () => createQuery([], calls); // Return an empty article page for the default-sort test.
+  Article.countDocuments = async () => 0; // Simulate a database with no matching articles.
+  ViewStat.aggregate = async () => []; // Return no grouped view totals for this test.
 
   const result = await viewService.listArticleViewStats({ sort: "random", page: "-3" });
 
@@ -114,9 +114,9 @@ test("rebuilding merges hourly groups per version and realigns the counter", asy
     { _id: { hour, version: 2 }, views: 5 },
     { _id: { hour: new Date("2026-09-10T15:00:00.000Z"), version: 2 }, views: 2 }
   ];
-  ViewStat.deleteMany = async (filter) => { calls.deleted = filter; return {}; };
-  ViewStat.insertMany = async (docs) => { calls.inserted = docs; return docs; };
-  Article.updateOne = async (filter, update) => { calls.counter = update; return {}; };
+  ViewStat.deleteMany = async (filter) => { calls.deleted = filter; return {}; }; // Capture which old buckets would be deleted, without deleting anything.
+  ViewStat.insertMany = async (docs) => { calls.inserted = docs; return docs; }; // Capture the replacement buckets and return them as if saved.
+  Article.updateOne = async (filter, update) => { calls.counter = update; return {}; }; // Capture the rebuilt article counter without saving it.
 
   const result = await viewService.rebuildArticleViewStats(articleId);
 
@@ -142,10 +142,10 @@ test("deleting view data removes events and buckets and resets the counter", asy
   const originalExists = Article.exists; const originalEvents = ViewEvent.deleteMany; const originalStats = ViewStat.deleteMany; const originalUpdate = Article.updateOne; // Keep the real methods.
   context.after(() => { Article.exists = originalExists; ViewEvent.deleteMany = originalEvents; ViewStat.deleteMany = originalStats; Article.updateOne = originalUpdate; }); // Restore them.
   const calls = {};
-  Article.exists = async () => true;
-  ViewEvent.deleteMany = async () => ({ deletedCount: 120 });
-  ViewStat.deleteMany = async () => ({ deletedCount: 30 });
-  Article.updateOne = async (filter, update) => { calls.counter = update; return {}; };
+  Article.exists = async () => true; // Pretend that the requested article exists.
+  ViewEvent.deleteMany = async () => ({ deletedCount: 120 }); // Simulate deleting 120 raw events without touching real data.
+  ViewStat.deleteMany = async () => ({ deletedCount: 30 }); // Simulate deleting 30 hourly buckets without touching real data.
+  Article.updateOne = async (filter, update) => { calls.counter = update; return {}; }; // Capture the requested counter reset without applying it.
 
   const result = await viewService.deleteArticleViewData("64f000000000000000000001");
 

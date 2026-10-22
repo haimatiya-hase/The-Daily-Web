@@ -7,7 +7,7 @@ function hashPassword(password) {
   return new Promise((resolve, reject) => {
     // Give every password a different random salt.
     const salt = crypto.randomBytes(16).toString("hex");
-    crypto.scrypt(password, salt, 64, (error, derivedKey) => {
+    crypto.scrypt(password, salt, 64, (error, derivedKey) => { // Reject hashing errors, or return the random salt and derived password hash together.
       if (error) {
         // Let the caller handle cryptography failures.
         reject(error);

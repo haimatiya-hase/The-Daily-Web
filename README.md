@@ -21,6 +21,10 @@ The project follows a simple MVC structure with server-rendered EJS pages,
 REST endpoints, MongoDB/Mongoose, semantic HTML5, responsive CSS, and plain
 JavaScript with AJAX. No frontend framework is required.
 
+> **Team database:** normal development now uses the shared **MongoDB Atlas cloud
+> database**. A local MongoDB database is still available as a **manual fallback**
+> if the cloud connection is unavailable. See [Database setup and fallback](#database-setup-and-fallback).
+
 ## At a glance
 
 | Area | What it does | Status |
@@ -35,7 +39,8 @@ JavaScript with AJAX. No frontend framework is required.
 > **Current checkpoint:** all core areas are implemented, including the public
 > article page, guest comments, view statistics, and the Impact Analytics graph.
 > This is not a full submission sign-off: User CRUD and weather refresh on an
-> open tab still need work. See the [current requirements audit](docs/requirements-traceability.md).
+> open tab still need work. Check the [original requirements](docs/project-requirements.pdf)
+> before submission.
 
 ## Editorial workflow
 
@@ -163,7 +168,8 @@ an updated article is being reviewed.
 ### Requirements
 
 - Node.js 20 or newer
-- MongoDB running locally, or a MongoDB Atlas connection
+- Access to the team's MongoDB Atlas database and an internet connection
+- Optional: MongoDB Community running locally for the fallback described below
 - Git
 
 ### Install and run
@@ -172,38 +178,136 @@ an updated article is being reviewed.
 git clone https://github.com/haimatiya-hase/The-Daily-Web.git
 cd The-Daily-Web
 npm install
-cp .env.example .env
+test -f .env || cp .env.example .env
+```
+
+The last command creates `.env` only if it does not already exist. Do not
+overwrite an existing `.env` when pulling changes from GitHub.
+
+Before starting, set `MONGODB_URI` in your local `.env` to the team's private
+Atlas connection string. Follow [Database setup and fallback](#database-setup-and-fallback),
+then run:
+
+```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
-
-Copy `.env.example` only on first setup; do not overwrite an existing `.env`.
+Open [http://localhost:3000](http://localhost:3000), or the port set in your `.env`.
 MongoDB is required for database-backed features. Without `MONGODB_URI`, the
 HTTP service can answer health checks, but login, sessions, articles, and the
-seed script cannot work normally.
+seed script cannot work normally. A running HTTP server alone does not prove
+that the database connection succeeded.
 
 ## Environment variables
 
-The `.env` file is local only and must never be committed.
+The `.env` file is local only and must never be committed. The connection string
+below is a **placeholder**, not a working account. Replace it privately with the
+team's connection details; never put real passwords in README files, screenshots,
+or `.env.example`.
 
 ```text
 PORT=3000
-MONGODB_URI=mongodb://127.0.0.1:27017/the-daily-web
+MONGODB_URI=mongodb+srv://DB_USER:URL_ENCODED_PASSWORD@CLUSTER_HOST/the-daily-web
 SESSION_TTL_MINUTES=10080
 WEATHER_API_URL=https://api.open-meteo.com/v1/forecast
 WEATHER_LATITUDE=31.7683
 WEATHER_LONGITUDE=35.2137
 WEATHER_TIMEZONE=Asia/Jerusalem
-SEED_PASSWORD=choose-a-private-demo-password
+SEED_PASSWORD=
 ```
 
-For the complete MongoDB setup, see
-[`docs/mongodb-setup.md`](docs/mongodb-setup.md).
+`SEED_PASSWORD` is needed only when intentionally creating or resetting demo
+accounts with the seed script. It is not needed to start an already prepared database.
+
+## Database setup and fallback
+
+### Normal team setup: MongoDB Atlas
+
+1. Get the team's connection string through a private channel. Use the shared
+   `the-daily-web` database, not a new cluster for each team member.
+2. Make sure your current IP address is allowed in the Atlas project's IP access
+   list. Use a **database user**, not your Atlas website login, to connect.
+3. Put the connection string in your local `.env` as the only active
+   `MONGODB_URI` line. Keep any options supplied in the team's working string.
+4. Stop the running Node server with `Ctrl+C` in its terminal, then run
+   `npm run dev` again. Restart explicitly after editing `.env`; do not rely on
+   watch mode to reload that file.
+5. Open [the health endpoint](http://localhost:3000/api/health) and check that
+   `database` is `"connected"`. Adjust the port if your setup uses another one.
+
+Atlas requires an allowed IP address and database-user credentials; see the
+[official Atlas connection guide](https://www.mongodb.com/docs/atlas/connect-to-database-deployment/).
+If the connection fails, check internet access, the IP access list, credentials,
+and the database name before changing code. Do not open access to every IP as a
+routine workaround.
+
+Everyone connected to the same cloud database sees the same saved data.
+Edits, publications, deletions, and seed operations can affect the whole team.
+Git branches separate **code**, not database records.
+
+### Temporary fallback: local MongoDB
+
+This is a manual switch to a separate database on your computer. The application
+does **not** automatically switch to local MongoDB when Atlas fails.
+
+1. Stop the Node server in its terminal with `Ctrl+C`.
+2. Start your installed local MongoDB service. On a Mac with the project's
+   MongoDB Community 8.0 Homebrew installation:
+
+   ```bash
+   brew services start mongodb-community@8.0
+   ```
+
+   If MongoDB is not installed, follow the
+   [official macOS 8.0 installation guide](https://www.mongodb.com/docs/v8.0/tutorial/install-mongodb-on-os-x/).
+   Other operating systems need their own MongoDB installation and service commands.
+
+3. In your private `.env`, comment out the cloud line and activate the local line:
+
+   ```text
+   # MONGODB_URI=mongodb+srv://DB_USER:URL_ENCODED_PASSWORD@CLUSTER_HOST/the-daily-web
+   MONGODB_URI=mongodb://127.0.0.1:27017/the-daily-web
+   ```
+
+   Keep your real cloud connection string private so you can restore it later.
+   Use **exactly one active `MONGODB_URI` line**. If you previously exported
+   `MONGODB_URI` in the terminal, that value overrides `.env`; remove that override
+   with `unset MONGODB_URI` when you want the server to use `.env`.
+
+4. Run `npm run dev` and check `database: "connected"` at the health endpoint.
+   Check your active connection setting too: the health endpoint does not identify
+   whether the connected database is local or in the cloud.
+5. Log in with an account that exists in the **local** database. If the local
+   database is empty, follow [Demo data](#demo-data) to prepare it deliberately.
+   An empty local database is not a failed connection.
+
+**Important:** the local database is not an automatic backup or synchronized
+copy of Atlas. Existing local data may be older, and new local changes will not
+appear in the cloud. Moving data between them requires a separate, coordinated
+backup/export and restore/import process. External photos and weather may still
+need internet access while using the local database.
+
+### Return to the cloud
+
+Stop the Node server, comment out the local `MONGODB_URI`, restore your private
+cloud connection line, and start the server again. Check the health endpoint and
+log in again if needed: login sessions are stored in the selected database.
+Returning to Atlas does not merge any changes made locally. Do not run seed just
+to reconnect.
+
+### Uploaded images are still local files
+
+Atlas stores article data and image addresses, but uploaded image files still
+live in `public/uploads/` on the computer running the application. Sharing the
+database does not copy these files to teammates' computers. Keep the required
+uploads available on the serving computer; external image URLs need to remain
+accessible as well.
 
 ## Demo data
 
-After MongoDB is available and `SEED_PASSWORD` is set in `.env`:
+For a new **local fallback database**, first confirm that the active
+`MONGODB_URI` points to `127.0.0.1`, and set a private `SEED_PASSWORD` in `.env`.
+Then run:
 
 ```bash
 npm run seed
@@ -224,6 +328,10 @@ The seed creates or updates:
 The fictional stories use category-specific public photos and the team's real
 display names. New reporter drafts have no default image: choose or upload one.
 
+**Shared cloud warning:** do not run `npm run seed` against the team's Atlas
+database without explicit team coordination and a backup. The script writes to
+whichever database `MONGODB_URI` selects; it is not restricted to local MongoDB.
+
 **Seed reset warning:** rerunning seed replaces marked demo content and its
 comments/views, including manual activity on those demo articles. It is not
 needed to start the server. Back up data you want to keep before reseeding.
@@ -238,17 +346,18 @@ shakedbremer
 haimatiya
 ```
 
-All demo accounts use the local `SEED_PASSWORD` value. Do not use this demo
-password for a real account.
+Demo account passwords are set from `SEED_PASSWORD` when seed runs. For the
+already prepared cloud database, use the credentials shared privately by the
+team; do not rerun seed to set your own password. Do not use a demo password for
+a real account.
 
 ## Useful commands
 
 ```bash
 npm start       # Start the server
 npm run dev     # Start the server with Node watch mode
-npm run check   # Check the syntax of all JavaScript files
 npm test        # Run the automated tests
-npm run seed    # Create the local demo dataset
+npm run seed    # Reset demo data in the selected database; coordinate before use
 ```
 
 Health check:
@@ -310,9 +419,9 @@ public/
 ├── css/                      Responsive newsroom design
 ├── js/                       Vanilla JavaScript and AJAX behavior
 └── uploads/                  Uploaded image files (keep this folder)
-scripts/                      Seed and syntax-check utilities
+scripts/                      Demo data seed script
 test/                         All automated tests, including reporter tests
-docs/                         Current guides and original source documents
+docs/                         Branching guide and original project requirements
 ```
 
 ## Team ownership
@@ -349,14 +458,10 @@ tests that were run, and a screenshot when the change affects the UI.
 
 ## Documentation
 
-- [Start here: documentation index](docs/README.md)
-- [Current application walkthrough](docs/application-walkthrough.md)
-- [Requirements traceability and open gaps](docs/requirements-traceability.md)
-- [MongoDB setup](docs/mongodb-setup.md)
+- [Database setup and fallback](#database-setup-and-fallback)
 - [Branching strategy](docs/branching-strategy.md)
-- [Team division](docs/team-division.md)
+- [Team ownership](#team-ownership)
 - [Original project requirements](docs/project-requirements.pdf)
-- [Updated project division](docs/project-division-updated.docx)
 
 ## Code explanation rule
 

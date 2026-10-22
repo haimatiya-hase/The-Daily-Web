@@ -122,7 +122,7 @@ const listArticleViewStats = async ({ search, sort, page } = {}) => {
   ]);
 
   return {
-    items: articles.map((article) => ({
+    items: articles.map((article) => ({ // Build each article's display data with its total and recent view counts.
       id: String(article._id),
       title: article.publishedVersion?.title || "ללא כותרת",
       publishedAt: article.publishedVersion?.publishedAt || null,
@@ -177,7 +177,7 @@ const getArticleViewSummary = async (articleId) => {
       id: String(article._id),
       title: article.publishedVersion?.title || article.workingVersion?.title || "ללא כותרת",
       currentVersion: Number(article.publishedVersion?.versionNumber) || 1,
-      publications: (article.publicationHistory || []).map((entry) => ({
+      publications: (article.publicationHistory || []).map((entry) => ({ // Keep only the version number and publication date for each history item.
         versionNumber: Number(entry.versionNumber) || 1,
         publishedAt: entry.publishedAt
       }))
@@ -192,7 +192,7 @@ const getArticleViewSummary = async (articleId) => {
       firstViewAt: range.firstBucket,
       lastViewAt: range.lastBucket
     },
-    byVersion: versionGroups.map((group) => ({ versionNumber: Number(group._id) || 1, views: group.views }))
+    byVersion: versionGroups.map((group) => ({ versionNumber: Number(group._id) || 1, views: group.views })) // Convert grouped version totals into simple objects for the browser.
   };
 };
 
@@ -227,7 +227,7 @@ const rebuildArticleViewStats = async (articleId) => {
   }
 
   const documents = [...buckets.values()];
-  const total = documents.reduce((sum, bucket) => sum + bucket.views, 0);
+  const total = documents.reduce((sum, bucket) => sum + bucket.views, 0); // Add the rebuilt hourly totals to obtain the new article view counter.
 
   // Replace the buckets and align the counter so all three representations agree again.
   await ViewStat.deleteMany({ article: objectId });

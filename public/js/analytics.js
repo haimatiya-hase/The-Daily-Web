@@ -51,8 +51,8 @@
     if (window.Chart) { resolve(window.Chart); return; } // Reuse the library when it is already loaded.
     const script = document.createElement("script");
     script.src = "/vendor/chart.js/chart.umd.js";
-    script.onload = () => resolve(window.Chart);
-    script.onerror = () => reject(new Error("ספריית הגרפים לא נטענה."));
+    script.onload = () => resolve(window.Chart); // Complete library loading with the Chart constructor once the script is ready.
+    script.onerror = () => reject(new Error("ספריית הגרפים לא נטענה.")); // Reject library loading so the panel can display a readable error.
     document.head.append(script);
   });
 
@@ -67,7 +67,7 @@
   // Draw a dashed labeled line at every publication that falls inside the drawn window.
   const markerPlugin = {
     id: "publicationMarkers",
-    afterDatasetsDraw(instance, args, options) {
+    afterDatasetsDraw(instance, args, options) { // Chart.js calls this hook after drawing data; it paints publication markers on the canvas.
       const { ctx, chartArea, scales } = instance;
       for (const marker of options.markers || []) { // Draw only markers inside the window.
         if (!marker.inRange) continue;
@@ -122,7 +122,7 @@
             type: "linear",
             min: Date.parse(data.from),
             max: Date.parse(data.to),
-            ticks: { color: COLORS.text, maxTicksLimit: 8, callback: (value) => formatTick(value, resolution) },
+            ticks: { color: COLORS.text, maxTicksLimit: 8, callback: (value) => formatTick(value, resolution) }, // Convert each numeric time-axis value into a readable date or hour.
             grid: { color: COLORS.grid }
           },
           y: {
@@ -138,8 +138,8 @@
             rtl: true,
             textDirection: "rtl",
             callbacks: {
-              title: (items) => formatFull(items[0].parsed.x),
-              label: (item) => `${item.parsed.y} צפיות`
+              title: (items) => formatFull(items[0].parsed.x), // Show the hovered point's full date and time in the tooltip title.
+              label: (item) => `${item.parsed.y} צפיות` // Show the hovered point's view count in the tooltip body.
             }
           },
           publicationMarkers: { markers: data.markers }
@@ -176,7 +176,7 @@
         String(marker.viewsAfter),
         marker.changePercent === null ? "—" : `${marker.changePercent > 0 ? "+" : ""}${marker.changePercent}%`
       ];
-      cells.forEach((text, index) => {
+      cells.forEach((text, index) => { // Create a safe table cell for each value and color the percentage-change cell.
         const td = document.createElement("td");
         td.textContent = text;
         if (index === 4 && marker.changePercent !== null) td.className = marker.changePercent >= 0 ? "impact-up" : "impact-down"; // Color the direction of the change.
@@ -208,7 +208,7 @@
         loadChartLibrary(),
         fetch(`/api/analytics/${articleId}?range=${encodeURIComponent(range)}`, { headers: { Accept: "application/json" } })
       ]);
-      const result = await response.json().catch(() => ({}));
+      const result = await response.json().catch(() => ({})); // Use an empty object if the response body cannot be read as JSON.
       if (!response.ok) throw new Error(result.error?.message || "טעינת הנתונים נכשלה.");
       if (version !== requestVersion) return; // Drop a stale response.
 

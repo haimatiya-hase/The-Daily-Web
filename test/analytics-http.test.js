@@ -14,8 +14,8 @@ const startApp = async (context) => {
     http.get({ host: "127.0.0.1", port, path, headers }, (response) => {
       let body = "";
       response.setEncoding("utf8");
-      response.on("data", (chunk) => { body += chunk; });
-      response.on("end", () => resolve({ status: response.statusCode, headers: response.headers, body }));
+      response.on("data", (chunk) => { body += chunk; }); // Collect each response chunk so the test can inspect the complete body.
+      response.on("end", () => resolve({ status: response.statusCode, headers: response.headers, body })); // Return the captured response when the server finishes sending it.
     }).on("error", reject);
   });
 };

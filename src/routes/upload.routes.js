@@ -13,7 +13,7 @@ const rawImageParser = express.raw({ type: Object.keys(ALLOWED_IMAGE_TYPES), lim
 
 // Translate parser failures such as an oversized body into the shared Hebrew error format.
 const parseImageBody = (req, res, next) => {
-  rawImageParser(req, res, (error) => {
+  rawImageParser(req, res, (error) => { // Continue to the upload handler, or convert a body-parser failure into a safe error.
     if (!error) {
       next();
       return;

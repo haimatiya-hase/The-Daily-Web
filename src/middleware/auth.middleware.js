@@ -54,7 +54,7 @@ function requireAuth(req, res, next) {
 
 // Allow only selected roles to continue to a protected route.
 function requireRole(...allowedRoles) {
-  return (req, res, next) => {
+  return (req, res, next) => { // Return middleware that checks the logged-in user's role before continuing.
     if (!req.user) {
       sendAccessError(req, res, 401, "נדרשת התחברות", "יש להתחבר כדי לגשת לאזור זה.");
       return;
